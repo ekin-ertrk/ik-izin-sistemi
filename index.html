@@ -1,367 +1,350 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="tr">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2685.6">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 13.0px Courier; -webkit-text-stroke: #000000}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 13.0px Courier; -webkit-text-stroke: #000000; min-height: 16.0px}
-    span.s1 {font-kerning: none}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İK Özel İzin Takip Paneli - Veritabanı Bağlantılı</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
+    </style>
 </head>
 <body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;html lang="tr"&gt;</span></p>
-<p class="p1"><span class="s1">&lt;head&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;title&gt;İK Özel İzin Takip Paneli - Veritabanı Bağlantılı&lt;/title&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://unpkg.com/react@17/umd/react.production.min.js"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://unpkg.com/babel-standalone@6/babel.min.js"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;style&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
-<p class="p1"><span class="s1">&lt;body&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div id="root"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script type="text/babel"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const { useState, useEffect, useMemo } = React;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>// Supabase Bağlantısı</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const supabaseUrl = 'https://rgscapgpdiybytlzbbkb.supabase.co';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const supabaseKey = 'sb_publishable_idM-Y-RSFKPpQ7RtekBzNw_fppVcucc';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const RESMI_TATILLER = [</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>'2026-01-01', '2026-04-23', '2026-05-01', '2026-05-19', '2026-07-15', '2026-08-30', '2026-10-29',</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>'2026-03-20', '2026-03-21', '2026-03-22', '2026-05-27', '2026-05-28', '2026-05-29', '2026-05-30'</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>];</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const isGunuHesapla = (baslangicStr, bitisStr) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (!baslangicStr || !bitisStr) return 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let baslangic = new Date(baslangicStr);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let bitis = new Date(bitisStr);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (baslangic &gt; bitis) return 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let isGunu = 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let current = new Date(baslangic);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>while (current &lt;= bitis) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>let day = current.getDay();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>let dateStr = current.toISOString().split('T')[0];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (day !== 0 &amp;&amp; day !== 6 &amp;&amp; !RESMI_TATILLER.includes(dateStr)) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>isGunu++;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>current.setDate(current.getDate() + 1);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>return isGunu;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const yasHesapla = (dogumTarihiStr) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if(!dogumTarihiStr) return 30;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const today = new Date();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const birthDate = new Date(dogumTarihiStr);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let age = today.getFullYear() - birthDate.getFullYear();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const m = today.getMonth() - birthDate.getMonth();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (m &lt; 0 || (m === 0 &amp;&amp; today.getDate() &lt; birthDate.getDate())) age--;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>return age;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const kidemYiliHesapla = (iseBaslamaStr) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if(!iseBaslamaStr) return 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const today = new Date();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const startDate = new Date(iseBaslamaStr);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let diff = (today - startDate) / (1000 * 60 * 60 * 24 * 365.25);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>return Math.floor(diff);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const yillikIzinHakkiHesapla = (iseBaslamaStr, dogumTarihiStr) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const kidem = kidemYiliHesapla(iseBaslamaStr);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const yas = yasHesapla(dogumTarihiStr);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (kidem &lt; 1) return 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let toplamHak = 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>for (let i = 1; i &lt;= kidem; i++) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>let yillikHak = 14;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (i &gt;= 5 &amp;&amp; i &lt; 15) yillikHak = 20;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (i &gt;= 15) yillikHak = 26;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (yas &lt;= 18 || yas &gt;= 50) yillikHak = Math.max(yillikHak, 20);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>toplamHak += yillikHak;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>return toplamHak;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const App = () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [activeTab, setActiveTab] = useState('ozet');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [personeller, setPersoneller] = useState([]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [talepler, setTalepler] = useState([]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [aramaMetni, setAramaMetni] = useState('');</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>// Personel Ekleme State'leri</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [yeniAd, setYeniAd] = useState('');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [yeniDepartman, setYeniDepartman] = useState('');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [yeniIseBaslama, setYeniIseBaslama] = useState('');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [yeniDogumTarihi, setYeniDogumTarihi] = useState('');</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>// İzin Ekleme State'leri</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [talepPersonelId, setTalepPersonelId] = useState('');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [talepBaslangic, setTalepBaslangic] = useState('');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const [talepBitis, setTalepBitis] = useState('');</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>useEffect(() =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const veriGetir = async () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const { data: pData } = await supabase.from('personeller').select('*');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (pData) setPersoneller(pData);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const { data: tData } = await supabase.from('talepler').select('*');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (tData) setTalepler(tData);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>};</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>veriGetir();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}, []);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const personelEkle = async (e) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>e.preventDefault();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>try {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const { data, error } = await supabase</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.from('personeller')</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.insert([{ ad: yeniAd, departman: yeniDepartman, ise_baslama: yeniIseBaslama, dogum_tarihi: yeniDogumTarihi }])</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.select();</span></p>
-<p class="p2"><span class="s1"><span class="Apple-converted-space">                    </span></span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (error) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>alert("Veritabanı Hatası: " + error.message);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>console.error("Detaylı Hata:", error);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>} else if (data) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>setPersoneller([...personeller, data[0]]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>setYeniAd(''); setYeniDepartman(''); setYeniIseBaslama(''); setYeniDogumTarihi('');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>alert("Personel başarıyla eklendi!");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>} catch (err) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>alert("Bağlantı Hatası: " + err.message);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const personelSil = async (id) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const { error } = await supabase.from('personeller').delete().eq('id', id);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (!error) setPersoneller(personeller.filter(p =&gt; p.id !== id));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const talepEkle = async (e) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>e.preventDefault();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>try {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const { data, error } = await supabase</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.from('talepler')</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.insert([{ personel_id: talepPersonelId, baslangic: talepBaslangic, bitis: talepBitis, durum: 'onaylandi' }])</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.select();</span></p>
-<p class="p2"><span class="s1"><span class="Apple-converted-space">                        </span></span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (error) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>alert("İzin Eklerken Hata Oluştu: " + error.message);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>} else if (data) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>setTalepler([...talepler, data[0]]);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>setTalepPersonelId(''); setTalepBaslangic(''); setTalepBitis('');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>alert("İzin başarıyla eklendi!");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>} catch (err) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>alert("Bağlantı Hatası: " + err.message);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const talepGuncelle = async (id, yeniDurum) =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const { error } = await supabase.from('talepler').update({ durum: yeniDurum }).eq('id', id);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (!error) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>setTalepler(talepler.map(t =&gt; t.id === id ? {...t, durum: yeniDurum} : t));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const personelDurumlari = useMemo(() =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>return personeller.map(p =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const hakEdilen = yillikIzinHakkiHesapla(p.ise_baslama, p.dogum_tarihi);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const kidem = kidemYiliHesapla(p.ise_baslama);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const kullanilanTalepler = talepler.filter(t =&gt; t.personel_id === p.id &amp;&amp; t.durum === 'onaylandi');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const kullanilanGun = kullanilanTalepler.reduce((toplam, t) =&gt; toplam + isGunuHesapla(t.baslangic, t.bitis), 0);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const bekleyenTalepler = talepler.filter(t =&gt; t.personel_id === p.id &amp;&amp; t.durum === 'bekliyor');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const bekleyenGun = bekleyenTalepler.reduce((toplam, t) =&gt; toplam + isGunuHesapla(t.baslangic, t.bitis), 0);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>return { ...p, hakEdilen, kullanilanGun, kalan: hakEdilen - kullanilanGun, bekleyenGun, kidem };</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}, [personeller, talepler]);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>return (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div className="flex h-screen overflow-hidden"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;div className="w-64 bg-white shadow-xl flex flex-col z-10"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div className="p-6 border-b border-slate-100"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;h1 className="text-xl font-bold text-blue-600"&gt;&lt;i className="fas fa-leaf mr-2"&gt;&lt;/i&gt;İK İzin Takip&lt;/h1&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;nav className="flex-1 p-4 space-y-2"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;button onClick={() =&gt; setActiveTab('ozet')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='ozet' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;i className="fas fa-chart-pie w-6"&gt;&lt;/i&gt; Bakiye ve Özet</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;button onClick={() =&gt; setActiveTab('personel')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='personel' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;i className="fas fa-users w-6"&gt;&lt;/i&gt; Personel Listesi</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;button onClick={() =&gt; setActiveTab('talepler')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='talepler' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;i className="fas fa-calendar-check w-6"&gt;&lt;/i&gt; İzin İşlemleri</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/nav&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;div className="flex-1 overflow-auto p-8"&gt;</span></p>
-<p class="p2"><span class="s1"><span class="Apple-converted-space">                        </span></span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>{activeTab === 'ozet' &amp;&amp; (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;h2 className="text-2xl font-bold text-slate-800 mb-6"&gt;İK Kontrol Paneli&lt;/h2&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;h3 className="font-semibold text-slate-700"&gt;İzin Bakiye Durumları&lt;/h3&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;input type="text" placeholder="İsim veya departman ara..." className="pl-4 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={aramaMetni} onChange={(e) =&gt; setAramaMetni(e.target.value)} /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;table className="w-full text-left border-collapse"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;thead&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;tr className="bg-white text-slate-500 text-sm border-b"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Personel&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Departman&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Kıdem&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Toplam Hak&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Kalan İzin&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;/tr&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/thead&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;tbody&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>{personelDurumlari.filter(p =&gt; p.ad.toLowerCase().includes(aramaMetni.toLowerCase()) || p.departman.toLowerCase().includes(aramaMetni.toLowerCase())).map(p =&gt; (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 font-medium text-slate-800"&gt;{p.ad}&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 text-slate-600"&gt;{p.departman}&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 text-slate-600"&gt;{p.kidem} Yıl&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 text-slate-600"&gt;{p.hakEdilen} Gün&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 font-bold"&gt;{p.kalan} Gün&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;/tr&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>))}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/tbody&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;/table&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>)}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>{activeTab === 'personel' &amp;&amp; (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;h2 className="text-2xl font-bold text-slate-800 mb-6"&gt;Personel Yönetimi&lt;/h2&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;form className="flex gap-4 items-end" onSubmit={personelEkle}&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;div className="flex-1"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;label className="block text-xs font-medium text-slate-500 mb-1"&gt;Ad Soyad&lt;/label&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;input required value={yeniAd} onChange={e=&gt;setYeniAd(e.target.value)} type="text" className="w-full border rounded-lg px-3 py-2 text-sm" /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;div className="flex-1"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;label className="block text-xs font-medium text-slate-500 mb-1"&gt;Departman&lt;/label&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;input required value={yeniDepartman} onChange={e=&gt;setYeniDepartman(e.target.value)} type="text" className="w-full border rounded-lg px-3 py-2 text-sm" /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;div className="flex-1"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;label className="block text-xs font-medium text-slate-500 mb-1"&gt;İşe Başlama&lt;/label&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;input required value={yeniIseBaslama} onChange={e=&gt;setYeniIseBaslama(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;div className="flex-1"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;label className="block text-xs font-medium text-slate-500 mb-1"&gt;Doğum Tarihi&lt;/label&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;input required value={yeniDogumTarihi} onChange={e=&gt;setYeniDogumTarihi(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"&gt;Ekle&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;/form&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;table className="w-full text-left border-collapse"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;thead&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;tr className="bg-slate-50 text-slate-500 text-sm border-b"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Ad Soyad&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Departman&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;İşe Başlama&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium"&gt;Doğum Tarihi&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;th className="p-4 font-medium text-right"&gt;İşlem&lt;/th&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;/tr&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/thead&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;tbody&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>{personeller.map(p =&gt; (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 font-medium text-slate-800"&gt;{p.ad}&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 text-slate-600"&gt;{p.departman}&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 text-slate-600"&gt;{p.ise_baslama}&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 text-slate-600"&gt;{p.dogum_tarihi}&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;td className="p-4 text-right"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>&lt;button onClick={() =&gt; personelSil(p.id)} className="text-red-500 hover:text-red-700"&gt;&lt;i className="fas fa-trash"&gt;&lt;/i&gt;&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;/td&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;/tr&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>))}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/tbody&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;/table&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>)}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>{activeTab === 'talepler' &amp;&amp; (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;h2 className="text-2xl font-bold text-slate-800 mb-6"&gt;İzin İşlemleri &amp; Onaylar&lt;/h2&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-8"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;h3 className="font-semibold text-slate-800 mb-4 border-b pb-2"&gt;Yeni İzin Kaydı Oluştur&lt;/h3&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;form className="flex flex-wrap gap-4 items-end" onSubmit={talepEkle}&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;div className="w-1/4 min-w-[200px]"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;label className="block text-xs font-medium text-slate-500 mb-1"&gt;Personel Seç&lt;/label&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;select required value={talepPersonelId} onChange={e=&gt;setTalepPersonelId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;option value=""&gt;Seçiniz...&lt;/option&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>{personelDurumlari.map(p =&gt; (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;option key={p.id} value={p.id}&gt;{p.ad} (Kalan: {p.kalan} Gün)&lt;/option&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>))}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;/select&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;div className="flex-1 min-w-[150px]"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;label className="block text-xs font-medium text-slate-500 mb-1"&gt;Başlangıç&lt;/label&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;input required value={talepBaslangic} onChange={e=&gt;setTalepBaslangic(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;div className="flex-1 min-w-[150px]"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;label className="block text-xs font-medium text-slate-500 mb-1"&gt;Bitiş&lt;/label&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;input required value={talepBitis} onChange={e=&gt;setTalepBitis(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>&lt;button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"&gt;Kaydet&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>&lt;/form&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;div className="space-y-4"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>{talepler.map(talep =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>const per = personelDurumlari.find(p =&gt; p.id === parseInt(talep.personel_id));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>if(!per) return null;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>const sure = isGunuHesapla(talep.baslangic, talep.bitis);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>return (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;div key={talep.id} className="bg-white rounded-xl shadow-sm border p-5 flex items-center justify-between border-slate-100"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;div className="flex-1"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;div className="flex items-center gap-3 mb-1"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>&lt;span className="font-bold text-lg text-slate-800"&gt;{per.ad}&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>&lt;span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded"&gt;{per.departman}&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>&lt;span className={`text-xs px-2 py-1 rounded-full font-medium ${talep.durum === 'onaylandi' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                            </span>{talep.durum}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;div className="text-sm text-slate-600 flex items-center gap-4"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>&lt;span&gt;&lt;i className="far fa-calendar-alt mr-1"&gt;&lt;/i&gt; {talep.baslangic} &lt;i className="fas fa-arrow-right text-xs mx-1"&gt;&lt;/i&gt; {talep.bitis}&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>&lt;span className="font-medium text-slate-800"&gt;&lt;i className="fas fa-clock mr-1 text-slate-400"&gt;&lt;/i&gt; {sure} İş Günü&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>{talep.durum !== 'reddedildi' &amp;&amp; (</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;button onClick={() =&gt; talepGuncelle(talep.id, 'reddedildi')} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg border border-red-200"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                        </span>İptal Et</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                    </span>&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                                </span>)}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                            </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                        </span>);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>})}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>)}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ReactDOM.render(&lt;App /&gt;, document.getElementById('root'));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Supabase Bağlantısı
+        const supabaseUrl = 'https://rgscapgpdiybytlzbbkb.supabase.co';
+        const supabaseKey = 'sb_publishable_idM-Y-RSFKPpQ7RtekBzNw_fppVcucc';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        const RESMI_TATILLER = [
+            '2026-01-01', '2026-04-23', '2026-05-01', '2026-05-19', '2026-07-15', '2026-08-30', '2026-10-29',
+            '2026-03-20', '2026-03-21', '2026-03-22', '2026-05-27', '2026-05-28', '2026-05-29', '2026-05-30'
+        ];
+
+        const isGunuHesapla = (baslangicStr, bitisStr) => {
+            if (!baslangicStr || !bitisStr) return 0;
+            let baslangic = new Date(baslangicStr);
+            let bitis = new Date(bitisStr);
+            if (baslangic > bitis) return 0;
+            let isGunu = 0;
+            let current = new Date(baslangic);
+            while (current <= bitis) {
+                let day = current.getDay();
+                let dateStr = current.toISOString().split('T')[0];
+                if (day !== 0 && day !== 6 && !RESMI_TATILLER.includes(dateStr)) {
+                    isGunu++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return isGunu;
+        };
+
+        const yasHesapla = (dogumTarihiStr) => {
+            if(!dogumTarihiStr) return 30;
+            const today = new Date();
+            const birthDate = new Date(dogumTarihiStr);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+            return age;
+        };
+
+        const kidemYiliHesapla = (iseBaslamaStr) => {
+            if(!iseBaslamaStr) return 0;
+            const today = new Date();
+            const startDate = new Date(iseBaslamaStr);
+            let diff = (today - startDate) / (1000 * 60 * 60 * 24 * 365.25);
+            return Math.floor(diff);
+        };
+
+        const yillikIzinHakkiHesapla = (iseBaslamaStr, dogumTarihiStr) => {
+            const kidem = kidemYiliHesapla(iseBaslamaStr);
+            const yas = yasHesapla(dogumTarihiStr);
+            if (kidem < 1) return 0;
+            let toplamHak = 0;
+            for (let i = 1; i <= kidem; i++) {
+                let yillikHak = 14;
+                if (i >= 5 && i < 15) yillikHak = 20;
+                if (i >= 15) yillikHak = 26;
+                if (yas <= 18 || yas >= 50) yillikHak = Math.max(yillikHak, 20);
+                toplamHak += yillikHak;
+            }
+            return toplamHak;
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('ozet');
+            const [personeller, setPersoneller] = useState([]);
+            const [talepler, setTalepler] = useState([]);
+            const [aramaMetni, setAramaMetni] = useState('');
+
+            // Personel Ekleme State'leri
+            const [yeniAd, setYeniAd] = useState('');
+            const [yeniDepartman, setYeniDepartman] = useState('');
+            const [yeniIseBaslama, setYeniIseBaslama] = useState('');
+            const [yeniDogumTarihi, setYeniDogumTarihi] = useState('');
+
+            // İzin Ekleme State'leri
+            const [talepPersonelId, setTalepPersonelId] = useState('');
+            const [talepBaslangic, setTalepBaslangic] = useState('');
+            const [talepBitis, setTalepBitis] = useState('');
+
+            useEffect(() => {
+                const veriGetir = async () => {
+                    const { data: pData } = await supabase.from('personeller').select('*');
+                    if (pData) setPersoneller(pData);
+                    const { data: tData } = await supabase.from('talepler').select('*');
+                    if (tData) setTalepler(tData);
+                };
+                veriGetir();
+            }, []);
+
+            const personelEkle = async (e) => {
+                e.preventDefault();
+                try {
+                    const { data, error } = await supabase
+                        .from('personeller')
+                        .insert([{ ad: yeniAd, departman: yeniDepartman, ise_baslama: yeniIseBaslama, dogum_tarihi: yeniDogumTarihi }])
+                        .select();
+                    
+                    if (error) {
+                        alert("Veritabanı Hatası: " + error.message);
+                        console.error("Detaylı Hata:", error);
+                    } else if (data) {
+                        setPersoneller([...personeller, data[0]]);
+                        setYeniAd(''); setYeniDepartman(''); setYeniIseBaslama(''); setYeniDogumTarihi('');
+                        alert("Personel başarıyla eklendi!");
+                    }
+                } catch (err) {
+                    alert("Bağlantı Hatası: " + err.message);
+                }
+            };
+
+            const personelSil = async (id) => {
+                const { error } = await supabase.from('personeller').delete().eq('id', id);
+                if (!error) setPersoneller(personeller.filter(p => p.id !== id));
+            };
+
+            const talepEkle = async (e) => {
+                e.preventDefault();
+                try {
+                    const { data, error } = await supabase
+                        .from('talepler')
+                        .insert([{ personel_id: talepPersonelId, baslangic: talepBaslangic, bitis: talepBitis, durum: 'onaylandi' }])
+                        .select();
+                        
+                    if (error) {
+                        alert("İzin Eklerken Hata Oluştu: " + error.message);
+                    } else if (data) {
+                        setTalepler([...talepler, data[0]]);
+                        setTalepPersonelId(''); setTalepBaslangic(''); setTalepBitis('');
+                        alert("İzin başarıyla eklendi!");
+                    }
+                } catch (err) {
+                    alert("Bağlantı Hatası: " + err.message);
+                }
+            };
+
+            const talepGuncelle = async (id, yeniDurum) => {
+                const { error } = await supabase.from('talepler').update({ durum: yeniDurum }).eq('id', id);
+                if (!error) {
+                    setTalepler(talepler.map(t => t.id === id ? {...t, durum: yeniDurum} : t));
+                }
+            };
+
+            const personelDurumlari = useMemo(() => {
+                return personeller.map(p => {
+                    const hakEdilen = yillikIzinHakkiHesapla(p.ise_baslama, p.dogum_tarihi);
+                    const kidem = kidemYiliHesapla(p.ise_baslama);
+                    const kullanilanTalepler = talepler.filter(t => t.personel_id === p.id && t.durum === 'onaylandi');
+                    const kullanilanGun = kullanilanTalepler.reduce((toplam, t) => toplam + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    const bekleyenTalepler = talepler.filter(t => t.personel_id === p.id && t.durum === 'bekliyor');
+                    const bekleyenGun = bekleyenTalepler.reduce((toplam, t) => toplam + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    return { ...p, hakEdilen, kullanilanGun, kalan: hakEdilen - kullanilanGun, bekleyenGun, kidem };
+                });
+            }, [personeller, talepler]);
+
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    <div className="w-64 bg-white shadow-xl flex flex-col z-10">
+                        <div className="p-6 border-b border-slate-100">
+                            <h1 className="text-xl font-bold text-blue-600"><i className="fas fa-leaf mr-2"></i>İK İzin Takip</h1>
+                        </div>
+                        <nav className="flex-1 p-4 space-y-2">
+                            <button onClick={() => setActiveTab('ozet')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='ozet' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                <i className="fas fa-chart-pie w-6"></i> Bakiye ve Özet
+                            </button>
+                            <button onClick={() => setActiveTab('personel')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='personel' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                <i className="fas fa-users w-6"></i> Personel Listesi
+                            </button>
+                            <button onClick={() => setActiveTab('talepler')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='talepler' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                <i className="fas fa-calendar-check w-6"></i> İzin İşlemleri
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div className="flex-1 overflow-auto p-8">
+                        
+                        {activeTab === 'ozet' && (
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6">İK Kontrol Paneli</h2>
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                        <h3 className="font-semibold text-slate-700">İzin Bakiye Durumları</h3>
+                                        <input type="text" placeholder="İsim veya departman ara..." className="pl-4 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} />
+                                    </div>
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-white text-slate-500 text-sm border-b">
+                                                <th className="p-4 font-medium">Personel</th>
+                                                <th className="p-4 font-medium">Departman</th>
+                                                <th className="p-4 font-medium">Kıdem</th>
+                                                <th className="p-4 font-medium">Toplam Hak</th>
+                                                <th className="p-4 font-medium">Kalan İzin</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {personelDurumlari.filter(p => p.ad.toLowerCase().includes(aramaMetni.toLowerCase()) || p.departman.toLowerCase().includes(aramaMetni.toLowerCase())).map(p => (
+                                                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                                    <td className="p-4 font-medium text-slate-800">{p.ad}</td>
+                                                    <td className="p-4 text-slate-600">{p.departman}</td>
+                                                    <td className="p-4 text-slate-600">{p.kidem} Yıl</td>
+                                                    <td className="p-4 text-slate-600">{p.hakEdilen} Gün</td>
+                                                    <td className="p-4 font-bold">{p.kalan} Gün</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'personel' && (
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6">Personel Yönetimi</h2>
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
+                                    <form className="flex gap-4 items-end" onSubmit={personelEkle}>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
+                                            <input required value={yeniAd} onChange={e=>setYeniAd(e.target.value)} type="text" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Departman</label>
+                                            <input required value={yeniDepartman} onChange={e=>setYeniDepartman(e.target.value)} type="text" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">İşe Başlama</label>
+                                            <input required value={yeniIseBaslama} onChange={e=>setYeniIseBaslama(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Doğum Tarihi</label>
+                                            <input required value={yeniDogumTarihi} onChange={e=>setYeniDogumTarihi(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        </div>
+                                        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">Ekle</button>
+                                    </form>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 text-slate-500 text-sm border-b">
+                                                <th className="p-4 font-medium">Ad Soyad</th>
+                                                <th className="p-4 font-medium">Departman</th>
+                                                <th className="p-4 font-medium">İşe Başlama</th>
+                                                <th className="p-4 font-medium">Doğum Tarihi</th>
+                                                <th className="p-4 font-medium text-right">İşlem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {personeller.map(p => (
+                                                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                                    <td className="p-4 font-medium text-slate-800">{p.ad}</td>
+                                                    <td className="p-4 text-slate-600">{p.departman}</td>
+                                                    <td className="p-4 text-slate-600">{p.ise_baslama}</td>
+                                                    <td className="p-4 text-slate-600">{p.dogum_tarihi}</td>
+                                                    <td className="p-4 text-right">
+                                                        <button onClick={() => personelSil(p.id)} className="text-red-500 hover:text-red-700"><i className="fas fa-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'talepler' && (
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6">İzin İşlemleri & Onaylar</h2>
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-8">
+                                    <h3 className="font-semibold text-slate-800 mb-4 border-b pb-2">Yeni İzin Kaydı Oluştur</h3>
+                                    <form className="flex flex-wrap gap-4 items-end" onSubmit={talepEkle}>
+                                        <div className="w-1/4 min-w-[200px]">
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Personel Seç</label>
+                                            <select required value={talepPersonelId} onChange={e=>setTalepPersonelId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white">
+                                                <option value="">Seçiniz...</option>
+                                                {personelDurumlari.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.ad} (Kalan: {p.kalan} Gün)</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="flex-1 min-w-[150px]">
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Başlangıç</label>
+                                            <input required value={talepBaslangic} onChange={e=>setTalepBaslangic(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        </div>
+                                        <div className="flex-1 min-w-[150px]">
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Bitiş</label>
+                                            <input required value={talepBitis} onChange={e=>setTalepBitis(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        </div>
+                                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">Kaydet</button>
+                                    </form>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {talepler.map(talep => {
+                                        const per = personelDurumlari.find(p => p.id === parseInt(talep.personel_id));
+                                        if(!per) return null;
+                                        const sure = isGunuHesapla(talep.baslangic, talep.bitis);
+                                        return (
+                                            <div key={talep.id} className="bg-white rounded-xl shadow-sm border p-5 flex items-center justify-between border-slate-100">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-1">
+                                                        <span className="font-bold text-lg text-slate-800">{per.ad}</span>
+                                                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">{per.departman}</span>
+                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${talep.durum === 'onaylandi' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {talep.durum}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-sm text-slate-600 flex items-center gap-4">
+                                                        <span><i className="far fa-calendar-alt mr-1"></i> {talep.baslangic} <i className="fas fa-arrow-right text-xs mx-1"></i> {talep.bitis}</span>
+                                                        <span className="font-medium text-slate-800"><i className="fas fa-clock mr-1 text-slate-400"></i> {sure} İş Günü</span>
+                                                    </div>
+                                                </div>
+                                                {talep.durum !== 'reddedildi' && (
+                                                    <button onClick={() => talepGuncelle(talep.id, 'reddedildi')} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg border border-red-200">
+                                                        İptal Et
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
 </body>
 </html>
