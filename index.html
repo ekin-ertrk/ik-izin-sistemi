@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sıcak İK İzin Paneli</title>
+    <title>İK İzin Takip Paneli</title>
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
@@ -31,7 +31,6 @@
         const supabaseKey = 'sb_publishable_idM-Y-RSFKPpQ7RtekBzNw_fppVcucc';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Renkler samimi tonlarla güncellendi
         const IZIN_TURLERI = [
             { ad: 'Yıllık İzin',    duser: true,  renk: 'rose',   not: 'Bakiyeden düşer.', hex: '#fb7185' },
             { ad: 'Avans İzin',     duser: true,  renk: 'purple', not: 'Bakiyeden düşer; 1 yılı dolmayan personel de kullanabilir.', hex: '#c084fc' },
@@ -94,7 +93,6 @@
         };
         const araliktaMi = (iso, bas, bit) => { const d = parseISO(iso); return d && d >= bas && d <= bit; };
 
-        // Sıcak tonlardan oluşan renk paleti
         const TONLAR = { 
             emerald: 'bg-emerald-100 text-emerald-700', 
             amber: 'bg-amber-100 text-amber-700', 
@@ -107,7 +105,6 @@
         };
         const Rozet = ({ children, ton }) => <span className={`text-xs px-3 py-1.5 rounded-full font-bold shadow-sm ${TONLAR[ton] || TONLAR.stone}`}>{children}</span>;
         
-        // Inputlar için daha yumuşak borderlar ve Focus renkleri (Gül kurusu)
         const inputCls = "w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 bg-white transition-shadow shadow-sm";
         const Etiket = ({ children }) => <label className="block text-xs font-bold text-stone-500 mb-1.5 ml-1 tracking-wide">{children}</label>;
 
@@ -116,10 +113,10 @@
             const kalan = Math.max(0, toplamHak - (yillik + avans));
             
             const dilimler = [
-                { deger: kalan, renk: '#34d399' }, // Yumuşak Yeşil (Kalan)
-                { deger: yillik, renk: '#fb7185' }, // Gül Kurusu (Yıllık)
-                { deger: avans, renk: '#c084fc' },  // Lila/Mor (Avans)
-                { deger: diger, renk: '#fbbf24' }   // Sıcak Sarı (Diğer)
+                { deger: kalan, renk: '#34d399' }, 
+                { deger: yillik, renk: '#fb7185' }, 
+                { deger: avans, renk: '#c084fc' },  
+                { deger: diger, renk: '#fbbf24' }   
             ];
 
             const cevre = 100; 
@@ -436,10 +433,9 @@
                     <div className="w-64 bg-white shadow-lg flex flex-col z-10 border-r border-stone-100">
                         <div className="p-8 border-b border-stone-100 text-center">
                             <div className="w-16 h-16 bg-gradient-to-br from-rose-100 to-orange-100 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">
-                                <i className="fas fa-mug-hot"></i>
+                                <i className="fas fa-leaf"></i>
                             </div>
                             <h1 className="text-xl font-extrabold text-stone-800 tracking-tight">İK İzin Paneli</h1>
-                            <p className="text-xs text-stone-400 mt-1 font-medium">Sıcak & Samimi</p>
                         </div>
                         <nav className="flex-1 p-5 space-y-3">
                             <button onClick={() => setActiveTab('ozet')} className={`w-full flex items-center p-3.5 rounded-xl transition-all ${activeTab === 'ozet' ? 'bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-md font-bold' : 'text-stone-500 hover:bg-stone-50 hover:text-rose-500 font-bold'}`}><i className={`fas fa-chart-pie w-6`}></i> <span className="flex-1 text-left">Bakiye ve Özet</span></button>
@@ -700,18 +696,17 @@
 
             return (
                 <div className="min-h-screen bg-stone-50 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-                    {/* Arka plan dekoratif daireler */}
-                    <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-                    <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
-                    <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
+                    <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+                    <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+                    <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
                     
                     <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-white/50 relative z-10">
                         <div className="bg-gradient-to-br from-rose-400 to-orange-400 p-10 text-center text-white relative">
                             <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-5 text-4xl shadow-inner rotate-3 transform">
-                                <i className="fas fa-mug-hot"></i>
+                                <i className="fas fa-leaf"></i>
                             </div>
                             <h2 className="text-3xl font-extrabold tracking-tight drop-shadow-md">İK Paneli</h2>
-                            <p className="text-rose-50 text-sm mt-2 font-medium">Kahve molası sıcaklığında yönetim.</p>
+                            <p className="text-rose-50 text-sm mt-2 font-medium">İzin Yönetim Sistemi</p>
                         </div>
                         <div className="p-8 pb-10">
                             {hata && <div className="bg-red-50 text-red-600 text-sm p-4 rounded-xl mb-6 text-center font-bold border border-red-100 shadow-sm flex items-center justify-center gap-2"><i className="fas fa-exclamation-circle"></i> {hata}</div>}
