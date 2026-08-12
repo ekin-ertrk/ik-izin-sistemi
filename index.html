@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -13,7 +12,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
-        .halka-grafik circle { transition: stroke-dashoffset 0.5s ease-in-out; }
+        .halka-grafik circle { transition: stroke-dashoffset 1s ease-out; }
     </style>
 </head>
 <body>
@@ -40,11 +39,11 @@
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         const IZIN_TURLERI = [
-            { ad: 'Yıllık İzin',    duser: true,  renk: 'blue',   not: 'Bakiyeden düşer.', hex: '#3b82f6' },
-            { ad: 'Avans İzin',     duser: true,  renk: 'purple', not: 'Bakiyeden düşer; 1 yılı dolmayan personel de kullanabilir.', hex: '#a855f7' },
-            { ad: 'Ücretsiz İzin',  duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.', hex: '#64748b' },
-            { ad: 'Mazeret İzni',   duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.', hex: '#64748b' },
-            { ad: 'Hastalık/Rapor', duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.', hex: '#64748b' }
+            { ad: 'Yıllık İzin',    duser: true,  renk: 'blue',   not: 'Bakiyeden düşer.', hex: '#0ea5e9' },
+            { ad: 'Avans İzin',     duser: true,  renk: 'rose',   not: 'Bakiyeden düşer; 1 yılı dolmayan personel de kullanabilir.', hex: '#f43f5e' },
+            { ad: 'Ücretsiz İzin',  duser: false, renk: 'amber',  not: 'Bakiyeden düşmez.', hex: '#f59e0b' },
+            { ad: 'Mazeret İzni',   duser: false, renk: 'amber',  not: 'Bakiyeden düşmez.', hex: '#f59e0b' },
+            { ad: 'Hastalık/Rapor', duser: false, renk: 'amber',  not: 'Bakiyeden düşmez.', hex: '#f59e0b' }
         ];
         const turBilgi = (ad) => IZIN_TURLERI.find(t => t.ad === ad) || IZIN_TURLERI[0];
         const BAKIYEDEN_DUSER = new Set(IZIN_TURLERI.filter(t => t.duser).map(t => t.ad));
@@ -101,20 +100,21 @@
         };
         const araliktaMi = (iso, bas, bit) => { const d = parseISO(iso); return d && d >= bas && d <= bit; };
 
-        const TONLAR = { emerald: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700', slate: 'bg-slate-100 text-slate-600', blue: 'bg-blue-100 text-blue-700', purple: 'bg-purple-100 text-purple-700' };
+        const TONLAR = { emerald: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700', slate: 'bg-slate-100 text-slate-600', blue: 'bg-blue-100 text-blue-700', rose: 'bg-rose-100 text-rose-700' };
         const Rozet = ({ children, ton }) => <span className={`text-xs px-2 py-1 rounded-full font-medium ${TONLAR[ton] || TONLAR.slate}`}>{children}</span>;
         const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
         const Etiket = ({ children }) => <label className="block text-xs font-medium text-slate-500 mb-1">{children}</label>;
 
+        /* Göz Alıcı Kalın Halka Grafik */
         const HalkaGrafik = ({ toplamHak, yillik, avans, diger }) => {
             const toplamKapasite = Math.max(toplamHak, yillik + avans); 
             const kalan = Math.max(0, toplamHak - (yillik + avans));
             
             const dilimler = [
-                { deger: kalan, renk: '#10b981' }, // Yeşil (Kalan)
-                { deger: yillik, renk: '#3b82f6' }, // Mavi (Yıllık)
-                { deger: avans, renk: '#a855f7' },  // Mor (Avans)
-                { deger: diger, renk: '#cbd5e1' }   // Gri (Diğer)
+                { deger: kalan, renk: '#10b981' }, // Zümrüt Yeşili
+                { deger: yillik, renk: '#0ea5e9' }, // Canlı Mavi
+                { deger: avans, renk: '#f43f5e' },  // Canlı Pembe
+                { deger: diger, renk: '#f59e0b' }   // Canlı Turuncu
             ];
 
             const cevre = 100; 
@@ -122,21 +122,23 @@
             const toplamGosterim = Math.max(toplamKapasite + diger, 1);
 
             return (
-                <svg viewBox="0 0 36 36" className="w-12 h-12 transform -rotate-90 halka-grafik">
-                    <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f1f5f9" strokeWidth="4" />
-                    {dilimler.map((d, i) => {
-                        if(d.deger <= 0) return null;
-                        const yuzde = (d.deger / toplamGosterim) * cevre;
-                        const offset = -birikimli;
-                        birikimli += yuzde;
-                        return (
-                            <circle key={i} cx="18" cy="18" r="15.915" fill="transparent"
-                                stroke={d.renk} strokeWidth="4"
-                                strokeDasharray={`${yuzde} ${cevre - yuzde}`}
-                                strokeDashoffset={offset} />
-                        );
-                    })}
-                </svg>
+                <div className="relative w-16 h-16 drop-shadow-md">
+                    <svg viewBox="-4 -4 44 44" className="w-16 h-16 transform -rotate-90 halka-grafik">
+                        <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f1f5f9" strokeWidth="6" />
+                        {dilimler.map((d, i) => {
+                            if(d.deger <= 0) return null;
+                            const yuzde = (d.deger / toplamGosterim) * cevre;
+                            const offset = -birikimli;
+                            birikimli += yuzde;
+                            return (
+                                <circle key={i} cx="18" cy="18" r="15.915" fill="transparent"
+                                    stroke={d.renk} strokeWidth="6" strokeLinecap="round"
+                                    strokeDasharray={`${yuzde} ${cevre - yuzde}`}
+                                    strokeDashoffset={offset} />
+                            );
+                        })}
+                    </svg>
+                </div>
             );
         };
 
@@ -253,7 +255,7 @@
             );
         };
 
-        const App = () => {
+        const App = ({ onLogout }) => {
             const [activeTab, setActiveTab] = useState('ozet');
             const [personeller, setPersoneller] = useState([]);
             const [talepler, setTalepler] = useState([]);
@@ -382,24 +384,33 @@
             const filtreliTalepler = talepler.filter(t => durumFiltre === 'hepsi' || t.durum === durumFiltre).sort((a, b) => (a.durum === 'bekliyor' ? 0 : 1) - (b.durum === 'bekliyor' ? 0 : 1));
 
             return (
-                <div className="flex h-screen overflow-hidden">
+                <div className="flex h-screen overflow-hidden bg-slate-50">
                     {duzenlenenTalep && <TalepDuzenlePenceresi talep={duzenlenenTalep} onKaydet={talepGuncelle} onKapat={() => setDuzenlenenTalep(null)} />}
                     {duzenlenenPersonel && <PersonelDuzenlePenceresi personel={duzenlenenPersonel} onKaydet={personelGuncelle} onKapat={() => setDuzenlenenPersonel(null)} />}
 
-                    <div className="w-64 bg-white shadow-xl flex flex-col z-10">
-                        <div className="p-6 border-b border-slate-100">
-                            <h1 className="text-xl font-bold text-blue-600"><i className="fas fa-leaf mr-2"></i>İK İzin Takip</h1>
+                    <div className="w-64 bg-white shadow-xl flex flex-col z-10 border-r border-slate-100">
+                        <div className="p-6 border-b border-slate-100 text-center">
+                            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 text-xl">
+                                <i className="fas fa-leaf"></i>
+                            </div>
+                            <h1 className="text-lg font-bold text-slate-800">İK İzin Takip</h1>
                         </div>
                         <nav className="flex-1 p-4 space-y-2">
-                            <button onClick={() => setActiveTab('ozet')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'ozet' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-chart-pie w-6`}></i> <span className="flex-1 text-left">Bakiye ve Özet</span></button>
-                            <button onClick={() => setActiveTab('personel')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'personel' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-users w-6`}></i> <span className="flex-1 text-left">Personel Listesi</span></button>
-                            <button onClick={() => setActiveTab('talepler')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'talepler' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-calendar-check w-6`}></i> <span className="flex-1 text-left">İzin İşlemleri</span>{bekleyenSayi > 0 && <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{bekleyenSayi}</span>}</button>
+                            <button onClick={() => setActiveTab('ozet')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'ozet' ? 'bg-blue-600 text-white shadow-md font-medium' : 'text-slate-600 hover:bg-slate-100'}`}><i className={`fas fa-chart-pie w-6`}></i> <span className="flex-1 text-left">Bakiye ve Özet</span></button>
+                            <button onClick={() => setActiveTab('personel')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'personel' ? 'bg-blue-600 text-white shadow-md font-medium' : 'text-slate-600 hover:bg-slate-100'}`}><i className={`fas fa-users w-6`}></i> <span className="flex-1 text-left">Personel Listesi</span></button>
+                            <button onClick={() => setActiveTab('talepler')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'talepler' ? 'bg-blue-600 text-white shadow-md font-medium' : 'text-slate-600 hover:bg-slate-100'}`}><i className={`fas fa-calendar-check w-6`}></i> <span className="flex-1 text-left">İzin İşlemleri</span>{bekleyenSayi > 0 && <span className="bg-amber-400 text-amber-900 text-xs px-2 py-0.5 rounded-full font-bold">{bekleyenSayi}</span>}</button>
                         </nav>
+                        <div className="p-4 mt-auto border-t border-slate-100">
+                            <button onClick={onLogout} className="w-full flex items-center p-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors font-medium">
+                                <i className="fas fa-sign-out-alt w-6"></i>
+                                <span className="flex-1 text-left">Çıkış Yap</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-auto p-8">
                         {hataMesaji && (
-                            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex justify-between">
+                            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex justify-between shadow-sm">
                                 <span><i className="fas fa-circle-exclamation mr-2"></i>{hataMesaji}</span>
                                 <button onClick={() => setHataMesaji('')} className="font-medium">Kapat</button>
                             </div>
@@ -409,24 +420,27 @@
                         {!yukleniyor && activeTab === 'ozet' && (
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 mb-6">Bakiye Grafikleri ve Özet</h2>
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 gap-4">
                                         <h3 className="font-semibold text-slate-700 whitespace-nowrap">Personel İzin Durumları</h3>
-                                        <input type="text" placeholder="İsim ara..." className={inputCls + ' max-w-xs'} value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} />
+                                        <div className="relative max-w-xs w-full">
+                                            <i className="fas fa-search absolute left-3 top-3 text-slate-400 text-sm"></i>
+                                            <input type="text" placeholder="İsim ara..." className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} />
+                                        </div>
                                     </div>
-                                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filtreliPersonel.map(p => (
-                                            <div key={p.id} className="relative border border-slate-100 rounded-xl p-4 flex gap-4 items-center bg-white shadow-sm hover:shadow-md transition-shadow">
-                                                <button onClick={() => setDuzenlenenPersonel(p)} className="absolute top-3 right-3 text-slate-300 hover:text-blue-600 transition-colors" title="Bakiye / Bilgi Düzenle"><i className="fas fa-cog"></i></button>
+                                            <div key={p.id} className="relative border border-slate-100 rounded-2xl p-5 flex gap-4 items-center bg-white shadow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                                                <button onClick={() => setDuzenlenenPersonel(p)} className="absolute top-3 right-3 text-slate-300 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 w-8 h-8 rounded-full flex items-center justify-center" title="Bakiye / Bilgi Düzenle"><i className="fas fa-pen text-xs"></i></button>
                                                 <HalkaGrafik toplamHak={p.toplamHak} yillik={p.kullanilanYillik} avans={p.avansGun} diger={p.dusmeyenGun} />
-                                                <div className="flex-1 pr-4">
-                                                    <div className="font-bold text-slate-800">{p.ad}</div>
-                                                    <div className="text-xs text-slate-500 mb-2">{p.departman || 'Departman Yok'} • {p.kidem} Yıl Kıdem</div>
-                                                    <div className="text-sm font-medium text-slate-700">Kalan: <span className={p.kalan <= 0 ? 'text-red-500' : 'text-emerald-500'}>{p.kalan} gün</span> / {p.toplamHak}</div>
-                                                    <div className="flex gap-1 flex-wrap mt-1">
-                                                        {p.kullanilanYillik > 0 && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Yıllık: {p.kullanilanYillik}</span>}
-                                                        {p.avansGun > 0 && <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">Avans: {p.avansGun}</span>}
-                                                        {p.dusmeyenGun > 0 && <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Diğer: {p.dusmeyenGun}</span>}
+                                                <div className="flex-1 pr-6">
+                                                    <div className="font-bold text-slate-800 text-lg">{p.ad}</div>
+                                                    <div className="text-xs text-slate-500 mb-3 font-medium bg-slate-100 inline-block px-2 py-1 rounded">{p.departman || 'Departman Yok'} • {p.kidem} Yıl</div>
+                                                    <div className="text-sm font-semibold text-slate-700 mb-2">Kalan: <span className={p.kalan <= 0 ? 'text-red-500 text-lg' : 'text-emerald-500 text-lg'}>{p.kalan} gün</span> / {p.toplamHak}</div>
+                                                    <div className="flex gap-1.5 flex-wrap">
+                                                        {p.kullanilanYillik > 0 && <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded font-bold border border-sky-200">Yıllık: {p.kullanilanYillik}</span>}
+                                                        {p.avansGun > 0 && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold border border-rose-200">Avans: {p.avansGun}</span>}
+                                                        {p.dusmeyenGun > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold border border-amber-200">Diğer: {p.dusmeyenGun}</span>}
                                                     </div>
                                                 </div>
                                             </div>
@@ -440,46 +454,46 @@
                         {!yukleniyor && activeTab === 'personel' && (
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 mb-6">Personel Yönetimi</h2>
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
-                                    <h3 className="font-semibold text-slate-800 mb-4">Yeni Personel Ekle</h3>
-                                    <form className="grid grid-cols-5 gap-4 items-end" onSubmit={personelEkle}>
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+                                    <h3 className="font-semibold text-slate-800 mb-4 border-b pb-2">Yeni Personel Ekle</h3>
+                                    <form className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end" onSubmit={personelEkle}>
                                         <div><Etiket>Ad Soyad *</Etiket><input required value={yeniAd} onChange={e => setYeniAd(e.target.value)} className={inputCls} /></div>
                                         <div><Etiket>Departman</Etiket><input value={yeniDepartman} onChange={e => setYeniDepartman(e.target.value)} className={inputCls} /></div>
                                         <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={yeniIseBaslama} onChange={e => setYeniIseBaslama(e.target.value)} className={inputCls} /></div>
                                         <div><Etiket>Devreden (gün)</Etiket><input type="number" value={yeniDevreden} onChange={e => setYeniDevreden(e.target.value)} className={inputCls} /></div>
                                         <div className="flex gap-2 items-end">
-                                            <label className="flex items-center gap-2 text-xs text-slate-600 flex-1 pb-2">
-                                                <input type="checkbox" checked={yeniMinYirmi} onChange={e => setYeniMinYirmi(e.target.checked)} />
+                                            <label className="flex items-center gap-2 text-xs text-slate-600 flex-1 pb-2 font-medium cursor-pointer">
+                                                <input type="checkbox" checked={yeniMinYirmi} onChange={e => setYeniMinYirmi(e.target.checked)} className="accent-blue-600 w-4 h-4" />
                                                 En az 20 gün
                                             </label>
-                                            <button type="submit" className="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 h-[38px]">Ekle</button>
+                                            <button type="submit" className="bg-blue-600 text-white px-5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium h-[38px]">Ekle</button>
                                         </div>
                                     </form>
                                 </div>
 
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
-                                            <tr className="bg-slate-50 text-slate-500 text-sm border-b">
-                                                <th className="p-4 font-medium">Ad Soyad</th>
-                                                <th className="p-4 font-medium">Departman</th>
-                                                <th className="p-4 font-medium">İşe Başlama</th>
-                                                <th className="p-4 font-medium">Kıdem</th>
-                                                <th className="p-4 font-medium">Devreden</th>
-                                                <th className="p-4 font-medium text-right">İşlem</th>
+                                            <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                                                <th className="p-4 font-semibold">Ad Soyad</th>
+                                                <th className="p-4 font-semibold">Departman</th>
+                                                <th className="p-4 font-semibold">İşe Başlama</th>
+                                                <th className="p-4 font-semibold">Kıdem</th>
+                                                <th className="p-4 font-semibold">Devreden</th>
+                                                <th className="p-4 font-semibold text-right">İşlem</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {personelDurumlari.map(p => (
-                                                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                                <tr key={p.id} className="border-b border-slate-100 hover:bg-blue-50 transition-colors">
                                                     <td className="p-4 font-medium text-slate-800">{p.ad}</td>
                                                     <td className="p-4 text-slate-600">{p.departman || '—'}</td>
                                                     <td className="p-4 text-slate-600">{trTarih(p.ise_baslama)}</td>
                                                     <td className="p-4 text-slate-600">{p.kidem} yıl</td>
-                                                    <td className={`p-4 font-medium ${p.devreden < 0 ? 'text-red-600' : 'text-slate-600'}`}>{p.devreden} gün</td>
+                                                    <td className={`p-4 font-bold ${p.devreden < 0 ? 'text-red-500' : 'text-slate-600'}`}>{p.devreden} gün</td>
                                                     <td className="p-4 text-right whitespace-nowrap">
-                                                        <button onClick={() => setDuzenlenenPersonel(p)} className="text-blue-600 hover:text-blue-800 mr-3" title="Düzenle"><i className="fas fa-pen-to-square"></i></button>
-                                                        <button onClick={() => personelSil(p.id, p.ad)} className="text-red-500 hover:text-red-700" title="Sil"><i className="fas fa-trash"></i></button>
+                                                        <button onClick={() => setDuzenlenenPersonel(p)} className="text-blue-500 hover:text-blue-700 mr-4 transition-colors" title="Düzenle"><i className="fas fa-pen-to-square text-lg"></i></button>
+                                                        <button onClick={() => personelSil(p.id, p.ad)} className="text-red-400 hover:text-red-600 transition-colors" title="Sil"><i className="fas fa-trash text-lg"></i></button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -497,10 +511,10 @@
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 mb-6">İzin Kaydı ve Onay Yönetimi</h2>
 
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-8">
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
                                     <h3 className="font-semibold text-slate-800 mb-4 border-b pb-2"><i className="fas fa-file-pen text-blue-500 mr-2"></i>Yeni İzin Kaydı (Detaylı Form)</h3>
-                                    <form onSubmit={talepEkle} className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
+                                    <form onSubmit={talepEkle} className="space-y-5">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <Etiket>Personel *</Etiket>
                                                 <select required value={talepPersonelId} onChange={e => setTalepPersonelId(e.target.value)} className={inputCls}>
@@ -516,13 +530,13 @@
                                             </div>
                                         </div>
                                         
-                                        <div className="grid grid-cols-3 gap-4 border-y border-slate-50 py-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-y border-slate-100 py-5">
                                             <div><Etiket>Başlangıç Tarihi *</Etiket><input required type="date" value={talepBaslangic} onChange={e => setTalepBaslangic(e.target.value)} className={inputCls} /></div>
                                             <div><Etiket>Bitiş Tarihi *</Etiket><input required type="date" value={talepBitis} onChange={e => setTalepBitis(e.target.value)} className={inputCls} /></div>
                                             <div><Etiket>İşe Başlayacağı Tarih *</Etiket><input required type="date" value={talepIseDonus} onChange={e => setTalepIseDonus(e.target.value)} className={inputCls} /></div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div><Etiket>İzinde Bulunacağı Adres</Etiket><textarea rows="3" placeholder="Sokak, İlçe, İl..." value={talepAdres} onChange={e => setTalepAdres(e.target.value)} className={inputCls}></textarea></div>
                                             <div className="space-y-4">
                                                 <div><Etiket>İletişim Telefonu</Etiket><input type="tel" placeholder="05XX XXX XX XX" value={talepTelefon} onChange={e => setTalepTelefon(e.target.value)} className={inputCls} /></div>
@@ -530,18 +544,18 @@
                                             </div>
                                         </div>
                                         
-                                        <div className="flex justify-between items-center bg-slate-50 p-4 rounded-lg border border-slate-100">
-                                            <div className="text-sm text-slate-600">
-                                                {talepGun > 0 ? <span>Bu kayıt neticesinde bakiyeden <strong>{turBilgi(talepTur).duser ? talepGun : 0} gün</strong> düşülecektir. Toplam izin süresi: {talepGun} iş günü.</span> : <span>Tarih seçimi yapınız.</span>}
+                                        <div className="flex flex-col md:flex-row justify-between items-center bg-blue-50 p-5 rounded-xl border border-blue-100 gap-4">
+                                            <div className="text-sm text-blue-800">
+                                                {talepGun > 0 ? <span>Bu kayıt neticesinde bakiyeden <strong>{turBilgi(talepTur).duser ? talepGun : 0} gün</strong> düşülecektir. Toplam izin süresi: <strong>{talepGun} iş günü</strong>.</span> : <span>Geçerli bir tarih seçimi yapınız.</span>}
                                             </div>
-                                            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-lg font-medium shadow-sm transition-all"><i className="fas fa-plus mr-2"></i>Kaydı Oluştur</button>
+                                            <button type="submit" className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-md transition-all transform hover:-translate-y-0.5"><i className="fas fa-plus mr-2"></i>Kaydı Oluştur</button>
                                         </div>
                                     </form>
                                 </div>
 
-                                <div className="flex gap-2 mb-4">
+                                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                                     {[['hepsi', 'Tüm Kayıtlar'], ['bekliyor', 'Bekleyenler'], ['onaylandi', 'Onaylı İzinler'], ['reddedildi', 'Reddedilenler']].map(([k, l]) => (
-                                        <button key={k} onClick={() => setDurumFiltre(k)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${durumFiltre === k ? 'bg-slate-800 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>{l}</button>
+                                        <button key={k} onClick={() => setDurumFiltre(k)} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${durumFiltre === k ? 'bg-slate-800 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>{l}</button>
                                     ))}
                                 </div>
 
@@ -551,47 +565,47 @@
                                         if (!per) return null;
                                         const tb = turBilgi(talep.tur || 'Yıllık İzin');
                                         return (
-                                            <div key={talep.id} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 hover:border-blue-100 transition-colors relative group">
-                                                <div className="absolute top-4 right-4 flex gap-2">
-                                                    <button onClick={() => setDuzenlenenTalep(talep)} className="w-8 h-8 flex items-center justify-center rounded bg-slate-50 text-blue-600 hover:bg-blue-100 transition-colors" title="Düzenle"><i className="fas fa-pencil-alt"></i></button>
-                                                    <button onClick={() => talepSil(talep.id)} className="w-8 h-8 flex items-center justify-center rounded bg-slate-50 text-red-500 hover:bg-red-100 transition-colors" title="Sil"><i className="fas fa-trash"></i></button>
+                                            <div key={talep.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-blue-300 transition-colors relative group">
+                                                <div className="absolute top-5 right-5 flex gap-2">
+                                                    <button onClick={() => setDuzenlenenTalep(talep)} className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 text-blue-600 hover:bg-blue-100 transition-colors border border-slate-100" title="Düzenle"><i className="fas fa-pencil-alt"></i></button>
+                                                    <button onClick={() => talepSil(talep.id)} className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 text-red-500 hover:bg-red-100 transition-colors border border-slate-100" title="Sil"><i className="fas fa-trash"></i></button>
                                                 </div>
 
-                                                <div className="flex items-center gap-3 mb-3 pr-20">
-                                                    <span className="font-bold text-lg text-slate-800">{per.ad}</span>
+                                                <div className="flex items-center gap-3 mb-4 pr-24">
+                                                    <span className="font-bold text-xl text-slate-800">{per.ad}</span>
                                                     <Rozet ton={tb.renk}>{talep.tur || 'Yıllık İzin'}</Rozet>
-                                                    <span className={`text-xs px-2 py-1 rounded border font-medium ${talep.durum === 'onaylandi' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : talep.durum === 'reddedildi' ? 'border-red-200 text-red-700 bg-red-50' : 'border-amber-200 text-amber-700 bg-amber-50'}`}>{talep.durum.toUpperCase()}</span>
+                                                    <span className={`text-xs px-2.5 py-1 rounded-md border font-bold ${talep.durum === 'onaylandi' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : talep.durum === 'reddedildi' ? 'border-red-200 text-red-700 bg-red-50' : 'border-amber-200 text-amber-700 bg-amber-50'}`}>{talep.durum.toUpperCase()}</span>
                                                 </div>
 
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600">
-                                                    <div className="space-y-1.5 border-l-2 border-slate-100 pl-3">
-                                                        <div><i className="far fa-calendar-alt text-slate-400 w-5"></i> <strong>{trTarih(talep.baslangic)}</strong> — <strong>{trTarih(talep.bitis)}</strong></div>
-                                                        <div><i className="fas fa-briefcase text-slate-400 w-5"></i> İşe Dönüş: {talep.ise_donus_tarihi ? trTarih(talep.ise_donus_tarihi) : 'Belirtilmedi'}</div>
-                                                        <div><i className="fas fa-stopwatch text-slate-400 w-5"></i> Süre: <strong>{isGunuHesapla(talep.baslangic, talep.bitis)} iş günü</strong></div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                    <div className="space-y-2.5 border-l-2 border-blue-200 pl-4">
+                                                        <div className="flex items-center"><i className="far fa-calendar-alt text-blue-400 w-6"></i> <strong>{trTarih(talep.baslangic)}</strong> <span className="mx-2 text-slate-400">—</span> <strong>{trTarih(talep.bitis)}</strong></div>
+                                                        <div className="flex items-center"><i className="fas fa-briefcase text-blue-400 w-6"></i> İşe Dönüş: {talep.ise_donus_tarihi ? <span className="font-medium text-slate-800 ml-1">{trTarih(talep.ise_donus_tarihi)}</span> : 'Belirtilmedi'}</div>
+                                                        <div className="flex items-center"><i className="fas fa-stopwatch text-blue-400 w-6"></i> Süre: <strong className="text-slate-800 ml-1">{isGunuHesapla(talep.baslangic, talep.bitis)} iş günü</strong></div>
                                                     </div>
-                                                    <div className="space-y-1.5 border-l-2 border-slate-100 pl-3">
-                                                        <div><i className="fas fa-phone text-slate-400 w-5"></i> {talep.telefon || 'Telefon belirtilmedi'}</div>
-                                                        <div><i className="fas fa-location-dot text-slate-400 w-5"></i> {talep.adres || 'Adres belirtilmedi'}</div>
-                                                        {talep.aciklama && <div><i className="fas fa-comment-dots text-slate-400 w-5"></i> {talep.aciklama}</div>}
+                                                    <div className="space-y-2.5 border-l-2 border-slate-200 pl-4">
+                                                        <div className="flex items-center"><i className="fas fa-phone text-slate-400 w-6"></i> {talep.telefon || 'Telefon belirtilmedi'}</div>
+                                                        <div className="flex"><i className="fas fa-location-dot text-slate-400 w-6 mt-1"></i> <span className="flex-1 leading-snug">{talep.adres || 'Adres belirtilmedi'}</span></div>
+                                                        {talep.aciklama && <div className="flex"><i className="fas fa-comment-dots text-slate-400 w-6 mt-1"></i> <span className="flex-1 italic leading-snug">{talep.aciklama}</span></div>}
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-4 pt-4 border-t border-slate-50 flex gap-2">
+                                                <div className="mt-5 pt-5 border-t border-slate-100 flex gap-3">
                                                     {talep.durum === 'bekliyor' && (
                                                         <React.Fragment>
-                                                            <button onClick={() => talepGuncelle(talep.id, { durum: 'onaylandi' })} className="bg-emerald-600 text-white px-5 py-1.5 rounded text-sm hover:bg-emerald-700 font-medium">Onayla</button>
-                                                            <button onClick={() => talepGuncelle(talep.id, { durum: 'reddedildi' })} className="bg-white text-red-600 px-5 py-1.5 rounded text-sm border border-red-200 hover:bg-red-50 font-medium">Reddet</button>
+                                                            <button onClick={() => talepGuncelle(talep.id, { durum: 'onaylandi' })} className="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-emerald-700 font-bold shadow-sm transition-colors"><i className="fas fa-check mr-2"></i>Onayla</button>
+                                                            <button onClick={() => talepGuncelle(talep.id, { durum: 'reddedildi' })} className="bg-white text-red-600 px-6 py-2 rounded-lg text-sm border border-red-200 hover:bg-red-50 font-bold transition-colors"><i className="fas fa-times mr-2"></i>Reddet</button>
                                                         </React.Fragment>
                                                     )}
                                                     {talep.durum !== 'bekliyor' && (
-                                                        <button onClick={() => talepGuncelle(talep.id, { durum: 'bekliyor' })} className="text-slate-500 px-5 py-1.5 rounded text-sm border border-slate-200 hover:bg-slate-50">Durumu 'Bekliyor' Yap</button>
+                                                        <button onClick={() => talepGuncelle(talep.id, { durum: 'bekliyor' })} className="text-slate-500 px-6 py-2 rounded-lg text-sm border border-slate-200 hover:bg-slate-100 font-medium transition-colors"><i className="fas fa-undo mr-2"></i>Durumu 'Bekliyor' Yap</button>
                                                     )}
                                                 </div>
                                             </div>
                                         );
                                     })}
                                     {filtreliTalepler.length === 0 && (
-                                        <div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400">Bu sekmede kayıt bulunmamaktadır.</div>
+                                        <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-10 text-center text-slate-500">Bu sekmede gösterilecek kayıt bulunmamaktadır.</div>
                                     )}
                                 </div>
                             </div>
@@ -601,7 +615,95 @@
             );
         };
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        const LoginEkran = ({ onLogin }) => {
+            const [kullanici, setKullanici] = useState('');
+            const [sifre, setSifre] = useState('');
+            const [hata, setHata] = useState('');
+
+            const girisYap = (e) => {
+                e.preventDefault();
+                // Koda yeni kullanıcılar eklemek istersen bu listeye virgülle ekleyebilirsin
+                const KULLANICILAR = [
+                    { k: 'esma.dogruel', s: 'IkPanel2026!*' }
+                ];
+                
+                const gecerliKullanici = KULLANICILAR.find(u => u.k === kullanici && u.s === sifre);
+                
+                if (gecerliKullanici) {
+                    onLogin();
+                } else {
+                    setHata('Kullanıcı adı veya şifre hatalı.');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200">
+                        <div className="bg-blue-600 p-8 text-center text-white">
+                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner">
+                                <i className="fas fa-lock"></i>
+                            </div>
+                            <h2 className="text-2xl font-bold">İK Panele Giriş</h2>
+                            <p className="text-blue-100 text-sm mt-2 opacity-90">Güvenli İzin Yönetim Sistemi</p>
+                        </div>
+                        <div className="p-8">
+                            {hata && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-6 text-center font-medium border border-red-100"><i className="fas fa-exclamation-circle mr-1"></i> {hata}</div>}
+                            <form onSubmit={girisYap} className="space-y-5">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Kullanıcı Adı</label>
+                                    <div className="relative">
+                                        <i className="fas fa-user absolute left-4 top-3.5 text-slate-400"></i>
+                                        <input type="text" required value={kullanici} onChange={e => setKullanici(e.target.value)} className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-slate-50 focus:bg-white" placeholder="Kullanıcı adınız..." />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Şifre</label>
+                                    <div className="relative">
+                                        <i className="fas fa-key absolute left-4 top-3.5 text-slate-400"></i>
+                                        <input type="password" required value={sifre} onChange={e => setSifre(e.target.value)} className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-slate-50 focus:bg-white" placeholder="••••••••" />
+                                    </div>
+                                </div>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg mt-2 transform hover:-translate-y-0.5">Sisteme Giriş Yap</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div className="mt-8 text-slate-400 text-xs text-center">
+                        <i className="fas fa-shield-halved mr-1"></i> Tüm veriler şifrelenmektedir.
+                    </div>
+                </div>
+            );
+        };
+
+        const MainApp = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [checkingAuth, setCheckingAuth] = useState(true);
+            
+            useEffect(() => {
+                const logged = localStorage.getItem('ik_logged_in');
+                if (logged === 'true') setIsLoggedIn(true);
+                setCheckingAuth(false);
+            }, []);
+
+            const handleLogin = () => {
+                localStorage.setItem('ik_logged_in', 'true');
+                setIsLoggedIn(true);
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('ik_logged_in');
+                setIsLoggedIn(false);
+            };
+
+            if (checkingAuth) return <div className="h-screen w-full bg-slate-50 flex items-center justify-center">Yükleniyor...</div>;
+            
+            if (!isLoggedIn) {
+                return <LoginEkran onLogin={handleLogin} />;
+            }
+            
+            return <App onLogout={handleLogout} />;
+        };
+
+        ReactDOM.render(<MainApp />, document.getElementById('root'));
     </script>
 </body>
 </html>
