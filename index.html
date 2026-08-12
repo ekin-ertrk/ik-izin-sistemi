@@ -176,9 +176,10 @@
                                 <div><Etiket>Departman</Etiket><input value={departman} onChange={e => setDepartman(e.target.value)} className={inputCls} /></div>
                                 <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={iseBaslama} onChange={e => setIseBaslama(e.target.value)} className={inputCls} /></div>
                             </div>
-                            <div>
-                                <Etiket>Geçen Yıldan Devreden İzin (Gün)</Etiket>
+                            <div className="bg-stone-50 p-4 rounded-xl border border-stone-100">
+                                <Etiket>Önceki Yıllardan Devreden Toplam İzin (Gün)</Etiket>
                                 <input type="number" value={devreden} onChange={e => setDevreden(e.target.value)} className={inputCls} />
+                                <p className="text-[11px] text-stone-500 mt-2 leading-relaxed">Personelin geçmiş tüm yıllardan birikmiş, kullanmadığı toplam izin hakkını giriniz. (Borcu varsa eksi değer girebilirsiniz, örn: -2).</p>
                             </div>
                             <label className="flex items-start gap-3 cursor-pointer bg-stone-50 p-4 rounded-xl border border-stone-100">
                                 <input type="checkbox" checked={minYirmi} onChange={e => setMinYirmi(e.target.checked)} className="mt-1 accent-rose-500 w-4 h-4" />
@@ -512,7 +513,7 @@
                                         <div><Etiket>Ad Soyad *</Etiket><input required value={yeniAd} onChange={e => setYeniAd(e.target.value)} className={inputCls} /></div>
                                         <div><Etiket>Departman</Etiket><input value={yeniDepartman} onChange={e => setYeniDepartman(e.target.value)} className={inputCls} /></div>
                                         <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={yeniIseBaslama} onChange={e => setYeniIseBaslama(e.target.value)} className={inputCls} /></div>
-                                        <div><Etiket>Devreden (gün)</Etiket><input type="number" value={yeniDevreden} onChange={e => setYeniDevreden(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>Geçmişten Devreden (Gün)</Etiket><input type="number" value={yeniDevreden} onChange={e => setYeniDevreden(e.target.value)} className={inputCls} /></div>
                                         <div className="flex gap-3 items-end">
                                             <label className="flex items-center gap-2 text-xs text-stone-600 flex-1 pb-2.5 font-bold cursor-pointer">
                                                 <input type="checkbox" checked={yeniMinYirmi} onChange={e => setYeniMinYirmi(e.target.checked)} className="accent-rose-500 w-5 h-5 rounded border-stone-300" />
@@ -531,7 +532,7 @@
                                                 <th className="p-5 font-bold uppercase tracking-wider text-xs">Departman</th>
                                                 <th className="p-5 font-bold uppercase tracking-wider text-xs">İşe Başlama</th>
                                                 <th className="p-5 font-bold uppercase tracking-wider text-xs">Kıdem</th>
-                                                <th className="p-5 font-bold uppercase tracking-wider text-xs">Devreden</th>
+                                                <th className="p-5 font-bold uppercase tracking-wider text-xs">Geçmişten Devreden</th>
                                                 <th className="p-5 font-bold uppercase tracking-wider text-xs text-right">İşlem</th>
                                             </tr>
                                         </thead>
