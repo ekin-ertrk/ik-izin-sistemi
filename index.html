@@ -34,7 +34,6 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Kendi Supabase bilgileriniz buraya gelecek
         const supabaseUrl = 'https://rgscapgpdiybytlzbbkb.supabase.co';
         const supabaseKey = 'sb_publishable_idM-Y-RSFKPpQ7RtekBzNw_fppVcucc';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -55,7 +54,6 @@
             '2027-01-01', '2027-04-23', '2027-05-01', '2027-05-19', '2027-07-15', '2027-08-30', '2027-10-29'
         ]);
 
-        /* ---------- Yardımcı Fonksiyonlar ---------- */
         const parseISO = (iso) => {
             if (!iso) return null;
             const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
@@ -101,41 +99,32 @@
             return n;
         };
         const araliktaMi = (iso, bas, bit) => { const d = parseISO(iso); return d && d >= bas && d <= bit; };
-        const cakisir = (aB, aE, bB, bE) => {
-            const a1 = parseISO(aB), a2 = parseISO(aE), b1 = parseISO(bB), b2 = parseISO(bE);
-            return a1 && a2 && b1 && b2 && a1 <= b2 && b1 <= a2;
-        };
 
-        /* ---------- UI Bileşenleri ---------- */
         const TONLAR = { emerald: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700', slate: 'bg-slate-100 text-slate-600', blue: 'bg-blue-100 text-blue-700', purple: 'bg-purple-100 text-purple-700' };
         const Rozet = ({ children, ton }) => <span className={`text-xs px-2 py-1 rounded-full font-medium ${TONLAR[ton] || TONLAR.slate}`}>{children}</span>;
         const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
         const Etiket = ({ children }) => <label className="block text-xs font-medium text-slate-500 mb-1">{children}</label>;
 
-        /* Halka Grafik Bileşeni */
         const HalkaGrafik = ({ toplamHak, yillik, avans, diger }) => {
             const toplamKapasite = Math.max(toplamHak, yillik + avans); 
             const kalan = Math.max(0, toplamHak - (yillik + avans));
             
-            // Veri dilimleri (sırasıyla çizilecek)
             const dilimler = [
                 { deger: kalan, renk: '#10b981' }, // Yeşil (Kalan)
                 { deger: yillik, renk: '#3b82f6' }, // Mavi (Yıllık)
                 { deger: avans, renk: '#a855f7' },  // Mor (Avans)
-                { deger: diger, renk: '#cbd5e1' }   // Gri (Mazeret vb. - ekstra halka olarak düşünülebilir, ama 100%'ü aşmamak için orantılıyoruz)
+                { deger: diger, renk: '#cbd5e1' }   // Gri (Diğer)
             ];
 
             const cevre = 100; 
             let birikimli = 0;
-            const toplamGosterim = toplamKapasite + diger; // Diğer izinler pastayı büyütür
+            const toplamGosterim = Math.max(toplamKapasite + diger, 1);
 
             return (
                 <svg viewBox="0 0 36 36" className="w-12 h-12 transform -rotate-90 halka-grafik">
-                    {/* Arka plan halkası */}
                     <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f1f5f9" strokeWidth="4" />
-                    
                     {dilimler.map((d, i) => {
-                        if(d.deger <= 0 || toplamGosterim <= 0) return null;
+                        if(d.deger <= 0) return null;
                         const yuzde = (d.deger / toplamGosterim) * cevre;
                         const offset = -birikimli;
                         birikimli += yuzde;
@@ -150,8 +139,63 @@
             );
         };
 
-        /* Talep Düzenleme Modali */
-        const TalepDuzenlePenceresi = ({ talep, personeller, onKaydet, onKapat }) => {
+        const PersonelDuzenlePenceresi = ({ personel, onKaydet, onKapat }) => {
+            const [ad, setAd] = useState(personel.ad || '');
+            const [departman, setDepartman] = useState(personel.departman || '');
+            const [iseBaslama, setIseBaslama] = useState((personel.ise_baslama || '').slice(0, 10));
+            const [devreden, setDevreden] = useState(String(personel.devreden == null ? 0 : personel.devreden));
+            const [minYirmi, setMinYirmi] = useState(!!personel.min_yirmi);
+            const [kaydediliyor, setKaydediliyor] = useState(false);
+
+            const kaydet = async (e) => {
+                e.preventDefault();
+                setKaydediliyor(true);
+                await onKaydet(personel.id, {
+                    ad: ad.trim(), departman: departman.trim(),
+                    ise_baslama: iseBaslama, devreden: Number(devreden) || 0,
+                    min_yirmi: minYirmi
+                });
+                setKaydediliyor(false);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4" onClick={onKapat}>
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-3">
+                            <h3 className="text-lg font-bold text-slate-800">Personel Bakiye & Bilgi Düzenle</h3>
+                            <button onClick={onKapat} className="text-slate-400 hover:text-slate-700"><i className="fas fa-xmark"></i></button>
+                        </div>
+                        <form onSubmit={kaydet} className="space-y-4">
+                            <div><Etiket>Ad Soyad *</Etiket><input required value={ad} onChange={e => setAd(e.target.value)} className={inputCls} /></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><Etiket>Departman</Etiket><input value={departman} onChange={e => setDepartman(e.target.value)} className={inputCls} /></div>
+                                <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={iseBaslama} onChange={e => setIseBaslama(e.target.value)} className={inputCls} /></div>
+                            </div>
+                            <div>
+                                <Etiket>Geçen Yıldan Devreden İzin (Gün)</Etiket>
+                                <input type="number" value={devreden} onChange={e => setDevreden(e.target.value)} className={inputCls} />
+                                <p className="text-xs text-slate-400 mt-1">Eksi bakiye (borç) aktarmak için başına - koyun (Örn: -3).</p>
+                            </div>
+                            <label className="flex items-start gap-2 cursor-pointer bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <input type="checkbox" checked={minYirmi} onChange={e => setMinYirmi(e.target.checked)} className="mt-1" />
+                                <span className="text-sm text-slate-600">
+                                    En az 20 gün izin hakkı (Kuralı)
+                                    <span className="block text-xs text-slate-400">18 yaş ve altı veya 50 yaş ve üzeri için işaretleyin.</span>
+                                </span>
+                            </label>
+                            <div className="flex justify-end gap-2 pt-2 border-t mt-4">
+                                <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50">Vazgeç</button>
+                                <button type="submit" disabled={kaydediliyor} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                                    {kaydediliyor ? 'Kaydediliyor…' : 'Değişiklikleri Kaydet'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const TalepDuzenlePenceresi = ({ talep, onKaydet, onKapat }) => {
             const [tur, setTur] = useState(talep.tur || 'Yıllık İzin');
             const [baslangic, setBaslangic] = useState((talep.baslangic || '').slice(0, 10));
             const [bitis, setBitis] = useState((talep.bitis || '').slice(0, 10));
@@ -216,9 +260,18 @@
             const [durumFiltre, setDurumFiltre] = useState('hepsi');
             const [yukleniyor, setYukleniyor] = useState(true);
             const [hataMesaji, setHataMesaji] = useState('');
+            
             const [duzenlenenTalep, setDuzenlenenTalep] = useState(null);
+            const [duzenlenenPersonel, setDuzenlenenPersonel] = useState(null);
 
-            // Yeni Form State'leri
+            // Personel Ekleme State'leri
+            const [yeniAd, setYeniAd] = useState('');
+            const [yeniDepartman, setYeniDepartman] = useState('');
+            const [yeniIseBaslama, setYeniIseBaslama] = useState('');
+            const [yeniDevreden, setYeniDevreden] = useState('0');
+            const [yeniMinYirmi, setYeniMinYirmi] = useState(false);
+
+            // Talep Ekleme State'leri
             const [talepPersonelId, setTalepPersonelId] = useState('');
             const [talepTur, setTalepTur] = useState('Yıllık İzin');
             const [talepBaslangic, setTalepBaslangic] = useState('');
@@ -266,18 +319,45 @@
             const seciliPer = perFor(talepPersonelId);
             const talepGun = isGunuHesapla(talepBaslangic, talepBitis);
 
+            const personelEkle = async (e) => {
+                e.preventDefault();
+                const { data, error } = await supabase.from('personeller').insert([{
+                    ad: yeniAd.trim(), departman: yeniDepartman.trim(),
+                    ise_baslama: yeniIseBaslama, devreden: Number(yeniDevreden) || 0,
+                    min_yirmi: yeniMinYirmi
+                }]).select();
+                if (error) return setHataMesaji('Personel eklenemedi: ' + error.message);
+                setPersoneller([...personeller, data[0]].sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')));
+                setYeniAd(''); setYeniDepartman(''); setYeniIseBaslama(''); setYeniDevreden('0'); setYeniMinYirmi(false);
+                setHataMesaji('');
+            };
+
+            const personelGuncelle = async (id, alanlar) => {
+                const { error } = await supabase.from('personeller').update(alanlar).eq('id', id);
+                if (error) { setHataMesaji('Güncellenemedi: ' + error.message); return; }
+                setPersoneller(personeller.map(p => p.id === id ? { ...p, ...alanlar } : p).sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')));
+                setDuzenlenenPersonel(null);
+                setHataMesaji('');
+            };
+
+            const personelSil = async (id, ad) => {
+                if (!window.confirm(`${ad} ve tüm izin kayıtları silinecek. Emin misiniz?`)) return;
+                const { error } = await supabase.from('personeller').delete().eq('id', id);
+                if (error) return setHataMesaji('Silinemedi: ' + error.message);
+                setPersoneller(personeller.filter(p => p.id !== id));
+                setTalepler(talepler.filter(t => String(t.personel_id) !== String(id)));
+            };
+
             const talepEkle = async (e) => {
                 e.preventDefault();
                 if (parseISO(talepBitis) < parseISO(talepBaslangic)) return setHataMesaji('Bitiş tarihi başlangıçtan önce olamaz.');
                 
-                const yeniKayit = {
+                const { data, error } = await supabase.from('talepler').insert([{
                     personel_id: talepPersonelId, tur: talepTur, baslangic: talepBaslangic, bitis: talepBitis,
                     ise_donus_tarihi: talepIseDonus || null, telefon: talepTelefon.trim(), adres: talepAdres.trim(),
                     durum: 'bekliyor', aciklama: talepAciklama.trim() || null
-                };
-
-                const { data, error } = await supabase.from('talepler').insert([yeniKayit]).select();
-                if (error) return setHataMesaji('İzin eklenemedi: Lütfen SQL adımını uyguladığınızdan emin olun. (' + error.message + ')');
+                }]).select();
+                if (error) return setHataMesaji('İzin eklenemedi: ' + error.message);
                 
                 setTalepler([data[0], ...talepler]);
                 setTalepBaslangic(''); setTalepBitis(''); setTalepIseDonus(''); setTalepTelefon(''); setTalepAdres(''); setTalepAciklama(''); setHataMesaji('');
@@ -290,8 +370,6 @@
                 setDuzenlenenTalep(null);
             };
 
-            const talepDurumDegistir = async (id, yeniDurum) => await talepGuncelle(id, { durum: yeniDurum });
-            
             const talepSil = async (id) => {
                 if (!window.confirm('Bu izin kaydı silinsin mi?')) return;
                 const { error } = await supabase.from('talepler').delete().eq('id', id);
@@ -304,9 +382,8 @@
 
             return (
                 <div className="flex h-screen overflow-hidden">
-                    {duzenlenenTalep && (
-                        <TalepDuzenlePenceresi talep={duzenlenenTalep} personeller={personeller} onKaydet={talepGuncelle} onKapat={() => setDuzenlenenTalep(null)} />
-                    )}
+                    {duzenlenenTalep && <TalepDuzenlePenceresi talep={duzenlenenTalep} onKaydet={talepGuncelle} onKapat={() => setDuzenlenenTalep(null)} />}
+                    {duzenlenenPersonel && <PersonelDuzenlePenceresi personel={duzenlenenPersonel} onKaydet={personelGuncelle} onKapat={() => setDuzenlenenPersonel(null)} />}
 
                     <div className="w-64 bg-white shadow-xl flex flex-col z-10">
                         <div className="p-6 border-b border-slate-100">
@@ -314,6 +391,7 @@
                         </div>
                         <nav className="flex-1 p-4 space-y-2">
                             <button onClick={() => setActiveTab('ozet')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'ozet' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-chart-pie w-6`}></i> <span className="flex-1 text-left">Bakiye ve Özet</span></button>
+                            <button onClick={() => setActiveTab('personel')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'personel' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-users w-6`}></i> <span className="flex-1 text-left">Personel Listesi</span></button>
                             <button onClick={() => setActiveTab('talepler')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'talepler' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-calendar-check w-6`}></i> <span className="flex-1 text-left">İzin İşlemleri</span>{bekleyenSayi > 0 && <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{bekleyenSayi}</span>}</button>
                         </nav>
                     </div>
@@ -337,9 +415,10 @@
                                     </div>
                                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {filtreliPersonel.map(p => (
-                                            <div key={p.id} className="border border-slate-100 rounded-xl p-4 flex gap-4 items-center bg-white shadow-sm hover:shadow-md transition-shadow">
+                                            <div key={p.id} className="relative border border-slate-100 rounded-xl p-4 flex gap-4 items-center bg-white shadow-sm hover:shadow-md transition-shadow">
+                                                <button onClick={() => setDuzenlenenPersonel(p)} className="absolute top-3 right-3 text-slate-300 hover:text-blue-600 transition-colors" title="Bakiye / Bilgi Düzenle"><i className="fas fa-cog"></i></button>
                                                 <HalkaGrafik toplamHak={p.toplamHak} yillik={p.kullanilanYillik} avans={p.avansGun} diger={p.dusmeyenGun} />
-                                                <div className="flex-1">
+                                                <div className="flex-1 pr-4">
                                                     <div className="font-bold text-slate-800">{p.ad}</div>
                                                     <div className="text-xs text-slate-500 mb-2">{p.departman || 'Departman Yok'} • {p.kidem} Yıl Kıdem</div>
                                                     <div className="text-sm font-medium text-slate-700">Kalan: <span className={p.kalan <= 0 ? 'text-red-500' : 'text-emerald-500'}>{p.kalan} gün</span> / {p.toplamHak}</div>
@@ -352,6 +431,62 @@
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ---------- PERSONEL LİSTESİ ---------- */}
+                        {!yukleniyor && activeTab === 'personel' && (
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6">Personel Yönetimi</h2>
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
+                                    <h3 className="font-semibold text-slate-800 mb-4">Yeni Personel Ekle</h3>
+                                    <form className="grid grid-cols-5 gap-4 items-end" onSubmit={personelEkle}>
+                                        <div><Etiket>Ad Soyad *</Etiket><input required value={yeniAd} onChange={e => setYeniAd(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>Departman</Etiket><input value={yeniDepartman} onChange={e => setYeniDepartman(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={yeniIseBaslama} onChange={e => setYeniIseBaslama(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>Devreden (gün)</Etiket><input type="number" value={yeniDevreden} onChange={e => setYeniDevreden(e.target.value)} className={inputCls} /></div>
+                                        <div className="flex gap-2 items-end">
+                                            <label className="flex items-center gap-2 text-xs text-slate-600 flex-1 pb-2">
+                                                <input type="checkbox" checked={yeniMinYirmi} onChange={e => setYeniMinYirmi(e.target.checked)} />
+                                                En az 20 gün
+                                            </label>
+                                            <button type="submit" className="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 h-[38px]">Ekle</button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 text-slate-500 text-sm border-b">
+                                                <th className="p-4 font-medium">Ad Soyad</th>
+                                                <th className="p-4 font-medium">Departman</th>
+                                                <th className="p-4 font-medium">İşe Başlama</th>
+                                                <th className="p-4 font-medium">Kıdem</th>
+                                                <th className="p-4 font-medium">Devreden</th>
+                                                <th className="p-4 font-medium text-right">İşlem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {personelDurumlari.map(p => (
+                                                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
+                                                    <td className="p-4 font-medium text-slate-800">{p.ad}</td>
+                                                    <td className="p-4 text-slate-600">{p.departman || '—'}</td>
+                                                    <td className="p-4 text-slate-600">{trTarih(p.ise_baslama)}</td>
+                                                    <td className="p-4 text-slate-600">{p.kidem} yıl</td>
+                                                    <td className={`p-4 font-medium ${p.devreden < 0 ? 'text-red-600' : 'text-slate-600'}`}>{p.devreden} gün</td>
+                                                    <td className="p-4 text-right whitespace-nowrap">
+                                                        <button onClick={() => setDuzenlenenPersonel(p)} className="text-blue-600 hover:text-blue-800 mr-3" title="Düzenle"><i className="fas fa-pen-to-square"></i></button>
+                                                        <button onClick={() => personelSil(p.id, p.ad)} className="text-red-500 hover:text-red-700" title="Sil"><i className="fas fa-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {personeller.length === 0 && (
+                                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">Henüz personel yok. Yukarıdaki formla ekleyin.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         )}
@@ -443,12 +578,12 @@
                                                 <div className="mt-4 pt-4 border-t border-slate-50 flex gap-2">
                                                     {talep.durum === 'bekliyor' && (
                                                         <React.Fragment>
-                                                            <button onClick={() => talepDurumDegistir(talep.id, 'onaylandi')} className="bg-emerald-600 text-white px-5 py-1.5 rounded text-sm hover:bg-emerald-700 font-medium">Onayla</button>
-                                                            <button onClick={() => talepDurumDegistir(talep.id, 'reddedildi')} className="bg-white text-red-600 px-5 py-1.5 rounded text-sm border border-red-200 hover:bg-red-50 font-medium">Reddet</button>
+                                                            <button onClick={() => talepGuncelle(talep.id, { durum: 'onaylandi' })} className="bg-emerald-600 text-white px-5 py-1.5 rounded text-sm hover:bg-emerald-700 font-medium">Onayla</button>
+                                                            <button onClick={() => talepGuncelle(talep.id, { durum: 'reddedildi' })} className="bg-white text-red-600 px-5 py-1.5 rounded text-sm border border-red-200 hover:bg-red-50 font-medium">Reddet</button>
                                                         </React.Fragment>
                                                     )}
                                                     {talep.durum !== 'bekliyor' && (
-                                                        <button onClick={() => talepDurumDegistir(talep.id, 'bekliyor')} className="text-slate-500 px-5 py-1.5 rounded text-sm border border-slate-200 hover:bg-slate-50">Durumu 'Bekliyor' Yap</button>
+                                                        <button onClick={() => talepGuncelle(talep.id, { durum: 'bekliyor' })} className="text-slate-500 px-5 py-1.5 rounded text-sm border border-slate-200 hover:bg-slate-50">Durumu 'Bekliyor' Yap</button>
                                                     )}
                                                 </div>
                                             </div>
