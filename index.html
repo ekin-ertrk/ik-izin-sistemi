@@ -12,6 +12,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
+        .halka-grafik circle { transition: stroke-dashoffset 0.5s ease-in-out; }
     </style>
 </head>
 <body>
@@ -28,28 +29,22 @@
       window.addEventListener('unhandledrejection', function(e){
         goster('Promise hatasi: '+(e.reason&&e.reason.message?e.reason.message:e.reason));
       });
-      setTimeout(function(){
-        var r=document.getElementById('root');
-        if(r&&r.children.length===0){
-          goster('Uygulama 5 saniyede yuklenemedi.\nGenelde React/Babel/Supabase kutuphanelerinden biri yuklenememistir (internet/CDN engeli).\n\nBu mesaji bana gonderin.');
-        }
-      },5000);
     })();
     </script>
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
+        // Kendi Supabase bilgileriniz buraya gelecek
         const supabaseUrl = 'https://rgscapgpdiybytlzbbkb.supabase.co';
         const supabaseKey = 'sb_publishable_idM-Y-RSFKPpQ7RtekBzNw_fppVcucc';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        /* İzin türleri — hangisi bakiyeden düşer? */
         const IZIN_TURLERI = [
-            { ad: 'Yıllık İzin',    duser: true,  renk: 'blue',   not: 'Bakiyeden düşer.' },
-            { ad: 'Avans İzin',     duser: true,  renk: 'purple', not: 'Bakiyeden düşer; 1 yılı dolmayan personel de kullanabilir.' },
-            { ad: 'Ücretsiz İzin',  duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.' },
-            { ad: 'Mazeret İzni',   duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.' },
-            { ad: 'Hastalık/Rapor', duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.' }
+            { ad: 'Yıllık İzin',    duser: true,  renk: 'blue',   not: 'Bakiyeden düşer.', hex: '#3b82f6' },
+            { ad: 'Avans İzin',     duser: true,  renk: 'purple', not: 'Bakiyeden düşer; 1 yılı dolmayan personel de kullanabilir.', hex: '#a855f7' },
+            { ad: 'Ücretsiz İzin',  duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.', hex: '#64748b' },
+            { ad: 'Mazeret İzni',   duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.', hex: '#64748b' },
+            { ad: 'Hastalık/Rapor', duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.', hex: '#64748b' }
         ];
         const turBilgi = (ad) => IZIN_TURLERI.find(t => t.ad === ad) || IZIN_TURLERI[0];
         const BAKIYEDEN_DUSER = new Set(IZIN_TURLERI.filter(t => t.duser).map(t => t.ad));
@@ -60,7 +55,7 @@
             '2027-01-01', '2027-04-23', '2027-05-01', '2027-05-19', '2027-07-15', '2027-08-30', '2027-10-29'
         ]);
 
-        /* ---------- Tarih yardımcıları ---------- */
+        /* ---------- Yardımcı Fonksiyonlar ---------- */
         const parseISO = (iso) => {
             if (!iso) return null;
             const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
@@ -70,7 +65,6 @@
         const toISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
         const trTarih = (iso) => { const d = parseISO(iso); return d ? d.toLocaleDateString('tr-TR') : '—'; };
 
-        /* ---------- İş Kanunu hesapları ---------- */
         const tamYil = (iso, ref = new Date()) => {
             const f = parseISO(iso);
             if (!f) return null;
@@ -112,72 +106,101 @@
             return a1 && a2 && b1 && b2 && a1 <= b2 && b1 <= a2;
         };
 
-        /* ---------- UI parçaları ---------- */
-        const TONLAR = {
-            emerald: 'bg-emerald-100 text-emerald-700',
-            amber: 'bg-amber-100 text-amber-700',
-            red: 'bg-red-100 text-red-700',
-            slate: 'bg-slate-100 text-slate-600',
-            blue: 'bg-blue-100 text-blue-700',
-            purple: 'bg-purple-100 text-purple-700'
-        };
-        const Rozet = ({ children, ton }) => (
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${TONLAR[ton] || TONLAR.slate}`}>{children}</span>
-        );
-        const DURUM_ETIKET = { onaylandi: 'Onaylandı', bekliyor: 'Bekliyor', reddedildi: 'Reddedildi' };
-        const DURUM_TON = { onaylandi: 'emerald', bekliyor: 'amber', reddedildi: 'red' };
-
+        /* ---------- UI Bileşenleri ---------- */
+        const TONLAR = { emerald: 'bg-emerald-100 text-emerald-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700', slate: 'bg-slate-100 text-slate-600', blue: 'bg-blue-100 text-blue-700', purple: 'bg-purple-100 text-purple-700' };
+        const Rozet = ({ children, ton }) => <span className={`text-xs px-2 py-1 rounded-full font-medium ${TONLAR[ton] || TONLAR.slate}`}>{children}</span>;
         const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
         const Etiket = ({ children }) => <label className="block text-xs font-medium text-slate-500 mb-1">{children}</label>;
 
-        /* ---------- Personel düzenleme penceresi ---------- */
-        const DuzenlePenceresi = ({ personel, onKaydet, onKapat }) => {
-            const [ad, setAd] = useState(personel.ad || '');
-            const [departman, setDepartman] = useState(personel.departman || '');
-            const [iseBaslama, setIseBaslama] = useState((personel.ise_baslama || '').slice(0, 10));
-            const [devreden, setDevreden] = useState(String(personel.devreden == null ? 0 : personel.devreden));
-            const [minYirmi, setMinYirmi] = useState(!!personel.min_yirmi);
+        /* Halka Grafik Bileşeni */
+        const HalkaGrafik = ({ toplamHak, yillik, avans, diger }) => {
+            const toplamKapasite = Math.max(toplamHak, yillik + avans); 
+            const kalan = Math.max(0, toplamHak - (yillik + avans));
+            
+            // Veri dilimleri (sırasıyla çizilecek)
+            const dilimler = [
+                { deger: kalan, renk: '#10b981' }, // Yeşil (Kalan)
+                { deger: yillik, renk: '#3b82f6' }, // Mavi (Yıllık)
+                { deger: avans, renk: '#a855f7' },  // Mor (Avans)
+                { deger: diger, renk: '#cbd5e1' }   // Gri (Mazeret vb. - ekstra halka olarak düşünülebilir, ama 100%'ü aşmamak için orantılıyoruz)
+            ];
+
+            const cevre = 100; 
+            let birikimli = 0;
+            const toplamGosterim = toplamKapasite + diger; // Diğer izinler pastayı büyütür
+
+            return (
+                <svg viewBox="0 0 36 36" className="w-12 h-12 transform -rotate-90 halka-grafik">
+                    {/* Arka plan halkası */}
+                    <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#f1f5f9" strokeWidth="4" />
+                    
+                    {dilimler.map((d, i) => {
+                        if(d.deger <= 0 || toplamGosterim <= 0) return null;
+                        const yuzde = (d.deger / toplamGosterim) * cevre;
+                        const offset = -birikimli;
+                        birikimli += yuzde;
+                        return (
+                            <circle key={i} cx="18" cy="18" r="15.915" fill="transparent"
+                                stroke={d.renk} strokeWidth="4"
+                                strokeDasharray={`${yuzde} ${cevre - yuzde}`}
+                                strokeDashoffset={offset} />
+                        );
+                    })}
+                </svg>
+            );
+        };
+
+        /* Talep Düzenleme Modali */
+        const TalepDuzenlePenceresi = ({ talep, personeller, onKaydet, onKapat }) => {
+            const [tur, setTur] = useState(talep.tur || 'Yıllık İzin');
+            const [baslangic, setBaslangic] = useState((talep.baslangic || '').slice(0, 10));
+            const [bitis, setBitis] = useState((talep.bitis || '').slice(0, 10));
+            const [iseDonus, setIseDonus] = useState((talep.ise_donus_tarihi || '').slice(0, 10));
+            const [telefon, setTelefon] = useState(talep.telefon || '');
+            const [adres, setAdres] = useState(talep.adres || '');
+            const [aciklama, setAciklama] = useState(talep.aciklama || '');
             const [kaydediliyor, setKaydediliyor] = useState(false);
 
             const kaydet = async (e) => {
                 e.preventDefault();
                 setKaydediliyor(true);
-                await onKaydet(personel.id, {
-                    ad: ad.trim(), departman: departman.trim(),
-                    ise_baslama: iseBaslama, devreden: Number(devreden) || 0,
-                    min_yirmi: minYirmi
+                await onKaydet(talep.id, {
+                    tur, baslangic, bitis,
+                    ise_donus_tarihi: iseDonus || null,
+                    telefon: telefon.trim(),
+                    adres: adres.trim(),
+                    aciklama: aciklama.trim()
                 });
                 setKaydediliyor(false);
             };
 
             return (
                 <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4" onClick={onKapat}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-slate-800">Personeli düzenle</h3>
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-3">
+                            <h3 className="text-lg font-bold text-slate-800">İzin Kaydını Düzenle</h3>
                             <button onClick={onKapat} className="text-slate-400 hover:text-slate-700"><i className="fas fa-xmark"></i></button>
                         </div>
                         <form onSubmit={kaydet} className="space-y-4">
-                            <div><Etiket>Ad Soyad *</Etiket><input required value={ad} onChange={e => setAd(e.target.value)} className={inputCls} /></div>
-                            <div><Etiket>Departman</Etiket><input value={departman} onChange={e => setDepartman(e.target.value)} className={inputCls} /></div>
-                            <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={iseBaslama} onChange={e => setIseBaslama(e.target.value)} className={inputCls} /></div>
-                            <div>
-                                <Etiket>Devreden izin (gün)</Etiket>
-                                <input type="number" value={devreden} onChange={e => setDevreden(e.target.value)} className={inputCls} />
-                                <p className="text-xs text-slate-400 mt-1">Avans borcu devrediliyorsa eksi yazın (örn. -5).</p>
+                            <div><Etiket>İzin Türü</Etiket>
+                                <select value={tur} onChange={e => setTur(e.target.value)} className={inputCls}>
+                                    {IZIN_TURLERI.map(t => <option key={t.ad} value={t.ad}>{t.ad}</option>)}
+                                </select>
                             </div>
-                            <label className="flex items-start gap-2 cursor-pointer">
-                                <input type="checkbox" checked={minYirmi} onChange={e => setMinYirmi(e.target.checked)} className="mt-1" />
-                                <span className="text-sm text-slate-600">
-                                    En az 20 gün izin hakkı
-                                    <span className="block text-xs text-slate-400">18 yaş ve altı ile 50 yaş ve üzeri çalışanlar için işaretleyin.</span>
-                                </span>
-                            </label>
-                            <div className="flex gap-2 pt-2">
-                                <button type="submit" disabled={kaydediliyor} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-                                    {kaydediliyor ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
-                                </button>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div><Etiket>Başlangıç</Etiket><input required type="date" value={baslangic} onChange={e => setBaslangic(e.target.value)} className={inputCls} /></div>
+                                <div><Etiket>Bitiş</Etiket><input required type="date" value={bitis} onChange={e => setBitis(e.target.value)} className={inputCls} /></div>
+                                <div><Etiket>İşe Dönüş</Etiket><input required type="date" value={iseDonus} onChange={e => setIseDonus(e.target.value)} className={inputCls} /></div>
+                            </div>
+                            <div><Etiket>İletişim Numarası</Etiket><input type="tel" value={telefon} onChange={e => setTelefon(e.target.value)} className={inputCls} /></div>
+                            <div><Etiket>İzinde Bulunacağı Adres</Etiket><textarea rows="2" value={adres} onChange={e => setAdres(e.target.value)} className={inputCls}></textarea></div>
+                            <div><Etiket>Açıklama</Etiket><textarea rows="2" value={aciklama} onChange={e => setAciklama(e.target.value)} className={inputCls}></textarea></div>
+                            
+                            <div className="flex justify-end gap-2 pt-2 border-t mt-4">
                                 <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50">Vazgeç</button>
+                                <button type="submit" disabled={kaydediliyor} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                                    {kaydediliyor ? 'Kaydediliyor…' : 'Güncelle'}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -193,18 +216,16 @@
             const [durumFiltre, setDurumFiltre] = useState('hepsi');
             const [yukleniyor, setYukleniyor] = useState(true);
             const [hataMesaji, setHataMesaji] = useState('');
-            const [duzenlenen, setDuzenlenen] = useState(null);
+            const [duzenlenenTalep, setDuzenlenenTalep] = useState(null);
 
-            const [yeniAd, setYeniAd] = useState('');
-            const [yeniDepartman, setYeniDepartman] = useState('');
-            const [yeniIseBaslama, setYeniIseBaslama] = useState('');
-            const [yeniDevreden, setYeniDevreden] = useState('0');
-            const [yeniMinYirmi, setYeniMinYirmi] = useState(false);
-
+            // Yeni Form State'leri
             const [talepPersonelId, setTalepPersonelId] = useState('');
             const [talepTur, setTalepTur] = useState('Yıllık İzin');
             const [talepBaslangic, setTalepBaslangic] = useState('');
             const [talepBitis, setTalepBitis] = useState('');
+            const [talepIseDonus, setTalepIseDonus] = useState('');
+            const [talepTelefon, setTalepTelefon] = useState('');
+            const [talepAdres, setTalepAdres] = useState('');
             const [talepAciklama, setTalepAciklama] = useState('');
 
             useEffect(() => {
@@ -226,143 +247,75 @@
                     const devreden = Number(p.devreden) || 0;
                     const toplamHak = hakEdilen + devreden;
 
-                    const buYil = talepler.filter(t =>
-                        String(t.personel_id) === String(p.id) &&
-                        yil && araliktaMi(t.baslangic, yil.bas, yil.bit)
-                    );
-                    const dusenOnayli = buYil.filter(t => t.durum === 'onaylandi' && BAKIYEDEN_DUSER.has(t.tur || 'Yıllık İzin'));
-                    const kullanilanGun = dusenOnayli.reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
-                    const avansGun = dusenOnayli.filter(t => t.tur === 'Avans İzin')
-                        .reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    const buYil = talepler.filter(t => String(t.personel_id) === String(p.id) && yil && araliktaMi(t.baslangic, yil.bas, yil.bit));
+                    const onayli = buYil.filter(t => t.durum === 'onaylandi');
+                    
+                    const kullanilanYillik = onayli.filter(t => t.tur === 'Yıllık İzin').reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    const avansGun = onayli.filter(t => t.tur === 'Avans İzin').reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    const dusmeyenGun = onayli.filter(t => !BAKIYEDEN_DUSER.has(t.tur || 'Yıllık İzin')).reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    
+                    const kullanilanGun = kullanilanYillik + avansGun;
                     const bekleyenGun = buYil.filter(t => t.durum === 'bekliyor' && BAKIYEDEN_DUSER.has(t.tur || 'Yıllık İzin'))
                         .reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
-                    const dusmeyenGun = buYil.filter(t => t.durum === 'onaylandi' && !BAKIYEDEN_DUSER.has(t.tur || 'Yıllık İzin'))
-                        .reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
 
-                    return {
-                        ...p, kidem, hakEdilen, devreden, toplamHak,
-                        kullanilanGun, avansGun, bekleyenGun, dusmeyenGun,
-                        kalan: toplamHak - kullanilanGun,
-                        yilBas: yil ? toISO(yil.bas) : null,
-                        yilBit: yil ? toISO(yil.bit) : null
-                    };
+                    return { ...p, kidem, hakEdilen, devreden, toplamHak, kullanilanYillik, avansGun, bekleyenGun, dusmeyenGun, kullanilanGun, kalan: toplamHak - kullanilanGun, yilBas: yil ? toISO(yil.bas) : null, yilBit: yil ? toISO(yil.bit) : null };
                 });
             }, [personeller, talepler]);
 
             const perFor = (id) => personelDurumlari.find(p => String(p.id) === String(id));
-
             const seciliPer = perFor(talepPersonelId);
             const talepGun = isGunuHesapla(talepBaslangic, talepBitis);
-            const seciliTurBilgi = turBilgi(talepTur);
-            const bakiyeAsimi = (seciliPer && talepTur === 'Yıllık İzin' && talepGun > 0)
-                ? talepGun - (seciliPer.kalan - seciliPer.bekleyenGun) : 0;
-            const cakisanlar = (seciliPer && talepBaslangic && talepBitis)
-                ? [...new Set(talepler.filter(t => {
-                    if (t.durum === 'reddedildi') return false;
-                    const o = perFor(t.personel_id);
-                    return o && String(o.id) !== String(seciliPer.id) &&
-                        o.departman === seciliPer.departman &&
-                        cakisir(talepBaslangic, talepBitis, t.baslangic, t.bitis);
-                }).map(t => perFor(t.personel_id).ad))]
-                : [];
-
-            /* ---------- Aksiyonlar ---------- */
-            const personelEkle = async (e) => {
-                e.preventDefault();
-                const { data, error } = await supabase.from('personeller').insert([{
-                    ad: yeniAd.trim(), departman: yeniDepartman.trim(),
-                    ise_baslama: yeniIseBaslama, devreden: Number(yeniDevreden) || 0,
-                    min_yirmi: yeniMinYirmi
-                }]).select();
-                if (error) return setHataMesaji('Personel eklenemedi: ' + error.message);
-                setPersoneller([...personeller, data[0]].sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')));
-                setYeniAd(''); setYeniDepartman(''); setYeniIseBaslama(''); setYeniDevreden('0'); setYeniMinYirmi(false);
-                setHataMesaji('');
-            };
-
-            const personelGuncelle = async (id, alanlar) => {
-                const { error } = await supabase.from('personeller').update(alanlar).eq('id', id);
-                if (error) { setHataMesaji('Güncellenemedi: ' + error.message); return; }
-                setPersoneller(personeller.map(p => p.id === id ? { ...p, ...alanlar } : p)
-                    .sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')));
-                setDuzenlenen(null);
-                setHataMesaji('');
-            };
-
-            const personelSil = async (id, ad) => {
-                if (!window.confirm(`${ad} ve tüm izin kayıtları silinecek. Devam edilsin mi?`)) return;
-                const { error } = await supabase.from('personeller').delete().eq('id', id);
-                if (error) return setHataMesaji('Silinemedi: ' + error.message);
-                setPersoneller(personeller.filter(p => p.id !== id));
-                setTalepler(talepler.filter(t => String(t.personel_id) !== String(id)));
-            };
 
             const talepEkle = async (e) => {
                 e.preventDefault();
-                if (parseISO(talepBitis) < parseISO(talepBaslangic))
-                    return setHataMesaji('Bitiş tarihi başlangıçtan önce olamaz.');
-                const { data, error } = await supabase.from('talepler').insert([{
-                    personel_id: talepPersonelId, tur: talepTur,
-                    baslangic: talepBaslangic, bitis: talepBitis,
+                if (parseISO(talepBitis) < parseISO(talepBaslangic)) return setHataMesaji('Bitiş tarihi başlangıçtan önce olamaz.');
+                
+                const yeniKayit = {
+                    personel_id: talepPersonelId, tur: talepTur, baslangic: talepBaslangic, bitis: talepBitis,
+                    ise_donus_tarihi: talepIseDonus || null, telefon: talepTelefon.trim(), adres: talepAdres.trim(),
                     durum: 'bekliyor', aciklama: talepAciklama.trim() || null
-                }]).select();
-                if (error) return setHataMesaji('İzin eklenemedi: ' + error.message);
+                };
+
+                const { data, error } = await supabase.from('talepler').insert([yeniKayit]).select();
+                if (error) return setHataMesaji('İzin eklenemedi: Lütfen SQL adımını uyguladığınızdan emin olun. (' + error.message + ')');
+                
                 setTalepler([data[0], ...talepler]);
-                setTalepBaslangic(''); setTalepBitis(''); setTalepAciklama('');
-                setHataMesaji('');
+                setTalepBaslangic(''); setTalepBitis(''); setTalepIseDonus(''); setTalepTelefon(''); setTalepAdres(''); setTalepAciklama(''); setHataMesaji('');
             };
 
-            const talepGuncelle = async (id, yeniDurum) => {
-                const { error } = await supabase.from('talepler').update({ durum: yeniDurum }).eq('id', id);
-                if (error) return setHataMesaji('Güncellenemedi: ' + error.message);
-                setTalepler(talepler.map(t => t.id === id ? { ...t, durum: yeniDurum } : t));
+            const talepGuncelle = async (id, alanlar) => {
+                const { error } = await supabase.from('talepler').update(alanlar).eq('id', id);
+                if (error) { setHataMesaji('Güncellenemedi: ' + error.message); return; }
+                setTalepler(talepler.map(t => t.id === id ? { ...t, ...alanlar } : t));
+                setDuzenlenenTalep(null);
             };
 
+            const talepDurumDegistir = async (id, yeniDurum) => await talepGuncelle(id, { durum: yeniDurum });
+            
             const talepSil = async (id) => {
                 if (!window.confirm('Bu izin kaydı silinsin mi?')) return;
                 const { error } = await supabase.from('talepler').delete().eq('id', id);
-                if (error) return setHataMesaji('Silinemedi: ' + error.message);
-                setTalepler(talepler.filter(t => t.id !== id));
+                if (!error) setTalepler(talepler.filter(t => t.id !== id));
             };
 
-            const filtreliPersonel = personelDurumlari.filter(p =>
-                (p.ad || '').toLowerCase().includes(aramaMetni.toLowerCase()) ||
-                (p.departman || '').toLowerCase().includes(aramaMetni.toLowerCase())
-            );
+            const filtreliPersonel = personelDurumlari.filter(p => (p.ad || '').toLowerCase().includes(aramaMetni.toLowerCase()) || (p.departman || '').toLowerCase().includes(aramaMetni.toLowerCase()));
             const bekleyenSayi = talepler.filter(t => t.durum === 'bekliyor').length;
-            const filtreliTalepler = talepler
-                .filter(t => durumFiltre === 'hepsi' || t.durum === durumFiltre)
-                .slice()
-                .sort((a, b) => (a.durum === 'bekliyor' ? 0 : 1) - (b.durum === 'bekliyor' ? 0 : 1));
-
-            const navBtn = (key, icon, label, badge) => (
-                <button key={key} onClick={() => setActiveTab(key)}
-                    className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === key ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <i className={`fas ${icon} w-6`}></i>
-                    <span className="flex-1 text-left">{label}</span>
-                    {badge > 0 && <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{badge}</span>}
-                </button>
-            );
+            const filtreliTalepler = talepler.filter(t => durumFiltre === 'hepsi' || t.durum === durumFiltre).sort((a, b) => (a.durum === 'bekliyor' ? 0 : 1) - (b.durum === 'bekliyor' ? 0 : 1));
 
             return (
                 <div className="flex h-screen overflow-hidden">
-                    {duzenlenen && (
-                        <DuzenlePenceresi personel={duzenlenen} onKaydet={personelGuncelle} onKapat={() => setDuzenlenen(null)} />
+                    {duzenlenenTalep && (
+                        <TalepDuzenlePenceresi talep={duzenlenenTalep} personeller={personeller} onKaydet={talepGuncelle} onKapat={() => setDuzenlenenTalep(null)} />
                     )}
 
                     <div className="w-64 bg-white shadow-xl flex flex-col z-10">
                         <div className="p-6 border-b border-slate-100">
                             <h1 className="text-xl font-bold text-blue-600"><i className="fas fa-leaf mr-2"></i>İK İzin Takip</h1>
-                            <p className="text-xs text-slate-400 mt-1">Yıllık izin yılı modeli</p>
                         </div>
                         <nav className="flex-1 p-4 space-y-2">
-                            {navBtn('ozet', 'fa-chart-pie', 'Bakiye ve Özet')}
-                            {navBtn('personel', 'fa-users', 'Personel Listesi')}
-                            {navBtn('talepler', 'fa-calendar-check', 'İzin İşlemleri', bekleyenSayi)}
+                            <button onClick={() => setActiveTab('ozet')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'ozet' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-chart-pie w-6`}></i> <span className="flex-1 text-left">Bakiye ve Özet</span></button>
+                            <button onClick={() => setActiveTab('talepler')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === 'talepler' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}><i className={`fas fa-calendar-check w-6`}></i> <span className="flex-1 text-left">İzin İşlemleri</span>{bekleyenSayi > 0 && <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{bekleyenSayi}</span>}</button>
                         </nav>
-                        <div className="p-4 text-xs text-slate-400 border-t border-slate-100">
-                            İzin yılı, personelin işe giriş yıldönümünden başlar.
-                        </div>
                     </div>
 
                     <div className="flex-1 overflow-auto p-8">
@@ -372,262 +325,137 @@
                                 <button onClick={() => setHataMesaji('')} className="font-medium">Kapat</button>
                             </div>
                         )}
-                        {yukleniyor && <div className="text-slate-500">Veriler yükleniyor…</div>}
 
-                        {/* ---------- ÖZET ---------- */}
+                        {/* ---------- BAKIYE VE ÖZET ---------- */}
                         {!yukleniyor && activeTab === 'ozet' && (
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800 mb-6">İK Kontrol Paneli</h2>
-                                <div className="grid grid-cols-4 gap-4 mb-6">
-                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
-                                        <div className="text-xs text-slate-500">Personel</div>
-                                        <div className="text-2xl font-bold text-slate-800">{personeller.length}</div>
-                                    </div>
-                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
-                                        <div className="text-xs text-slate-500">Onay bekleyen</div>
-                                        <div className={`text-2xl font-bold ${bekleyenSayi ? 'text-amber-600' : 'text-slate-800'}`}>{bekleyenSayi}</div>
-                                    </div>
-                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
-                                        <div className="text-xs text-slate-500">Avans kullanan</div>
-                                        <div className="text-2xl font-bold text-purple-600">{personelDurumlari.filter(p => p.avansGun > 0).length}</div>
-                                    </div>
-                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
-                                        <div className="text-xs text-slate-500">Bakiyesi eksiye düşen</div>
-                                        <div className="text-2xl font-bold text-red-600">{personelDurumlari.filter(p => p.kalan < 0).length}</div>
-                                    </div>
-                                </div>
-
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6">Bakiye Grafikleri ve Özet</h2>
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                                     <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 gap-4">
-                                        <h3 className="font-semibold text-slate-700 whitespace-nowrap">Bu izin yılı bakiyeleri</h3>
-                                        <input type="text" placeholder="İsim veya departman ara..." className={inputCls + ' max-w-xs'}
-                                            value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} />
+                                        <h3 className="font-semibold text-slate-700 whitespace-nowrap">Personel İzin Durumları</h3>
+                                        <input type="text" placeholder="İsim ara..." className={inputCls + ' max-w-xs'} value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} />
                                     </div>
-                                    <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="bg-white text-slate-500 text-sm border-b">
-                                                <th className="p-4 font-medium">Personel</th>
-                                                <th className="p-4 font-medium">İzin Yılı</th>
-                                                <th className="p-4 font-medium">Kıdem</th>
-                                                <th className="p-4 font-medium">Hak + Devreden</th>
-                                                <th className="p-4 font-medium">Kullanılan</th>
-                                                <th className="p-4 font-medium">Kalan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filtreliPersonel.map(p => (
-                                                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
-                                                    <td className="p-4">
-                                                        <div className="font-medium text-slate-800">{p.ad}</div>
-                                                        <div className="text-xs text-slate-500">{p.departman}</div>
-                                                    </td>
-                                                    <td className="p-4 text-xs text-slate-500">
-                                                        {p.yilBas ? `${trTarih(p.yilBas)} – ${trTarih(p.yilBit)}` : '—'}
-                                                    </td>
-                                                    <td className="p-4 text-slate-600">{p.kidem} yıl</td>
-                                                    <td className="p-4 text-slate-600">
-                                                        {p.hakEdilen}{p.devreden ? ` ${p.devreden > 0 ? '+' : '−'} ${Math.abs(p.devreden)}` : ''} = <strong>{p.toplamHak}</strong>
-                                                    </td>
-                                                    <td className="p-4 text-slate-600">
-                                                        {p.kullanilanGun} gün
-                                                        <div className="mt-1 flex gap-1 flex-wrap">
-                                                            {p.avansGun > 0 && <Rozet ton="purple">{p.avansGun} avans</Rozet>}
-                                                            {p.bekleyenGun > 0 && <Rozet ton="amber">+{p.bekleyenGun} bekliyor</Rozet>}
-                                                            {p.dusmeyenGun > 0 && <Rozet ton="slate">{p.dusmeyenGun} düşmeyen</Rozet>}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <span className={`font-bold ${p.kalan < 0 ? 'text-red-600' : p.kalan === 0 ? 'text-slate-500' : 'text-emerald-600'}`}>
-                                                            {p.kalan} gün
-                                                        </span>
-                                                        {p.kalan < 0 && <div className="mt-1"><Rozet ton="red">{Math.abs(p.kalan)} gün borç</Rozet></div>}
-                                                        {p.kidem < 1 && <div className="mt-1"><Rozet ton="slate">1 yılı dolmadı</Rozet></div>}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {filtreliPersonel.length === 0 && (
-                                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">Kayıt bulunamadı.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
+                                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {filtreliPersonel.map(p => (
+                                            <div key={p.id} className="border border-slate-100 rounded-xl p-4 flex gap-4 items-center bg-white shadow-sm hover:shadow-md transition-shadow">
+                                                <HalkaGrafik toplamHak={p.toplamHak} yillik={p.kullanilanYillik} avans={p.avansGun} diger={p.dusmeyenGun} />
+                                                <div className="flex-1">
+                                                    <div className="font-bold text-slate-800">{p.ad}</div>
+                                                    <div className="text-xs text-slate-500 mb-2">{p.departman || 'Departman Yok'} • {p.kidem} Yıl Kıdem</div>
+                                                    <div className="text-sm font-medium text-slate-700">Kalan: <span className={p.kalan <= 0 ? 'text-red-500' : 'text-emerald-500'}>{p.kalan} gün</span> / {p.toplamHak}</div>
+                                                    <div className="flex gap-1 flex-wrap mt-1">
+                                                        {p.kullanilanYillik > 0 && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Yıllık: {p.kullanilanYillik}</span>}
+                                                        {p.avansGun > 0 && <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">Avans: {p.avansGun}</span>}
+                                                        {p.dusmeyenGun > 0 && <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Diğer: {p.dusmeyenGun}</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* ---------- PERSONEL ---------- */}
-                        {!yukleniyor && activeTab === 'personel' && (
-                            <div>
-                                <h2 className="text-2xl font-bold text-slate-800 mb-6">Personel Yönetimi</h2>
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
-                                    <h3 className="font-semibold text-slate-800 mb-4">Personel ekle</h3>
-                                    <form className="grid grid-cols-5 gap-4 items-end" onSubmit={personelEkle}>
-                                        <div><Etiket>Ad Soyad *</Etiket><input required value={yeniAd} onChange={e => setYeniAd(e.target.value)} className={inputCls} /></div>
-                                        <div><Etiket>Departman</Etiket><input value={yeniDepartman} onChange={e => setYeniDepartman(e.target.value)} className={inputCls} /></div>
-                                        <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={yeniIseBaslama} onChange={e => setYeniIseBaslama(e.target.value)} className={inputCls} /></div>
-                                        <div><Etiket>Devreden (gün)</Etiket><input type="number" value={yeniDevreden} onChange={e => setYeniDevreden(e.target.value)} className={inputCls} /></div>
-                                        <div className="flex gap-2 items-end">
-                                            <label className="flex items-center gap-2 text-xs text-slate-600 flex-1 pb-2">
-                                                <input type="checkbox" checked={yeniMinYirmi} onChange={e => setYeniMinYirmi(e.target.checked)} />
-                                                En az 20 gün
-                                            </label>
-                                            <button type="submit" className="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 h-[38px]">Ekle</button>
-                                        </div>
-                                    </form>
-                                    <p className="text-xs text-slate-400 mt-3">
-                                        "En az 20 gün" kutusunu 18 yaş ve altı ile 50 yaş ve üzeri çalışanlar için işaretleyin (4857 md.53). Tüm bilgiler sonradan düzenlenebilir.
-                                    </p>
-                                </div>
-
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                                    <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="bg-slate-50 text-slate-500 text-sm border-b">
-                                                <th className="p-4 font-medium">Ad Soyad</th>
-                                                <th className="p-4 font-medium">Departman</th>
-                                                <th className="p-4 font-medium">İşe Başlama</th>
-                                                <th className="p-4 font-medium">Kıdem</th>
-                                                <th className="p-4 font-medium">Devreden</th>
-                                                <th className="p-4 font-medium">Kural</th>
-                                                <th className="p-4 font-medium text-right">İşlem</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {personelDurumlari.map(p => (
-                                                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
-                                                    <td className="p-4 font-medium text-slate-800">{p.ad}</td>
-                                                    <td className="p-4 text-slate-600">{p.departman || '—'}</td>
-                                                    <td className="p-4 text-slate-600">{trTarih(p.ise_baslama)}</td>
-                                                    <td className="p-4 text-slate-600">{p.kidem} yıl</td>
-                                                    <td className={`p-4 font-medium ${p.devreden < 0 ? 'text-red-600' : 'text-slate-600'}`}>{p.devreden} gün</td>
-                                                    <td className="p-4">{p.min_yirmi ? <Rozet ton="blue">En az 20 gün</Rozet> : <span className="text-slate-300 text-sm">—</span>}</td>
-                                                    <td className="p-4 text-right whitespace-nowrap">
-                                                        <button onClick={() => setDuzenlenen(p)} className="text-blue-600 hover:text-blue-800 mr-3" title="Düzenle"><i className="fas fa-pen-to-square"></i></button>
-                                                        <button onClick={() => personelSil(p.id, p.ad)} className="text-red-500 hover:text-red-700" title="Sil"><i className="fas fa-trash"></i></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {personeller.length === 0 && (
-                                                <tr><td colSpan="7" className="p-8 text-center text-slate-400">Henüz personel yok. Yukarıdaki formla ekleyin.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ---------- TALEPLER ---------- */}
+                        {/* ---------- İZİN İŞLEMLERİ & FORM ---------- */}
                         {!yukleniyor && activeTab === 'talepler' && (
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800 mb-6">İzin İşlemleri & Onaylar</h2>
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6">İzin Kaydı ve Onay Yönetimi</h2>
 
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-8">
-                                    <h3 className="font-semibold text-slate-800 mb-4 border-b pb-2">Yeni izin kaydı oluştur</h3>
-                                    <form className="grid grid-cols-5 gap-4 items-end" onSubmit={talepEkle}>
-                                        <div>
-                                            <Etiket>Personel *</Etiket>
-                                            <select required value={talepPersonelId} onChange={e => setTalepPersonelId(e.target.value)} className={inputCls}>
-                                                <option value="">Seçiniz...</option>
-                                                {personelDurumlari.map(p => <option key={p.id} value={p.id}>{p.ad} (Kalan: {p.kalan})</option>)}
-                                            </select>
+                                    <h3 className="font-semibold text-slate-800 mb-4 border-b pb-2"><i className="fas fa-file-pen text-blue-500 mr-2"></i>Yeni İzin Kaydı (Detaylı Form)</h3>
+                                    <form onSubmit={talepEkle} className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Etiket>Personel *</Etiket>
+                                                <select required value={talepPersonelId} onChange={e => setTalepPersonelId(e.target.value)} className={inputCls}>
+                                                    <option value="">Seçiniz...</option>
+                                                    {personelDurumlari.map(p => <option key={p.id} value={p.id}>{p.ad} (Kalan: {p.kalan})</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <Etiket>İzin Türü *</Etiket>
+                                                <select value={talepTur} onChange={e => setTalepTur(e.target.value)} className={inputCls}>
+                                                    {IZIN_TURLERI.map(t => <option key={t.ad} value={t.ad}>{t.ad}</option>)}
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Etiket>İzin Türü *</Etiket>
-                                            <select value={talepTur} onChange={e => setTalepTur(e.target.value)} className={inputCls}>
-                                                {IZIN_TURLERI.map(t => <option key={t.ad} value={t.ad}>{t.ad}</option>)}
-                                            </select>
+                                        
+                                        <div className="grid grid-cols-3 gap-4 border-y border-slate-50 py-4">
+                                            <div><Etiket>Başlangıç Tarihi *</Etiket><input required type="date" value={talepBaslangic} onChange={e => setTalepBaslangic(e.target.value)} className={inputCls} /></div>
+                                            <div><Etiket>Bitiş Tarihi *</Etiket><input required type="date" value={talepBitis} onChange={e => setTalepBitis(e.target.value)} className={inputCls} /></div>
+                                            <div><Etiket>İşe Başlayacağı Tarih *</Etiket><input required type="date" value={talepIseDonus} onChange={e => setTalepIseDonus(e.target.value)} className={inputCls} /></div>
                                         </div>
-                                        <div><Etiket>Başlangıç *</Etiket><input required type="date" value={talepBaslangic} onChange={e => setTalepBaslangic(e.target.value)} className={inputCls} /></div>
-                                        <div><Etiket>Bitiş *</Etiket><input required type="date" value={talepBitis} onChange={e => setTalepBitis(e.target.value)} className={inputCls} /></div>
-                                        <div className="flex gap-2">
-                                            <div className="flex-1"><Etiket>Açıklama</Etiket><input value={talepAciklama} onChange={e => setTalepAciklama(e.target.value)} className={inputCls} /></div>
-                                            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg h-[38px] self-end">Kaydet</button>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div><Etiket>İzinde Bulunacağı Adres</Etiket><textarea rows="3" placeholder="Sokak, İlçe, İl..." value={talepAdres} onChange={e => setTalepAdres(e.target.value)} className={inputCls}></textarea></div>
+                                            <div className="space-y-4">
+                                                <div><Etiket>İletişim Telefonu</Etiket><input type="tel" placeholder="05XX XXX XX XX" value={talepTelefon} onChange={e => setTalepTelefon(e.target.value)} className={inputCls} /></div>
+                                                <div><Etiket>Açıklama (Opsiyonel)</Etiket><input type="text" placeholder="İzin sebebi vb." value={talepAciklama} onChange={e => setTalepAciklama(e.target.value)} className={inputCls} /></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex justify-between items-center bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                            <div className="text-sm text-slate-600">
+                                                {talepGun > 0 ? <span>Bu kayıt neticesinde bakiyeden <strong>{turBilgi(talepTur).duser ? talepGun : 0} gün</strong> düşülecektir. Toplam izin süresi: {talepGun} iş günü.</span> : <span>Tarih seçimi yapınız.</span>}
+                                            </div>
+                                            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-lg font-medium shadow-sm transition-all"><i className="fas fa-plus mr-2"></i>Kaydı Oluştur</button>
                                         </div>
                                     </form>
-
-                                    <div className="mt-4 space-y-2">
-                                        <div className="text-sm text-slate-500">
-                                            <i className="fas fa-circle-info mr-1"></i>
-                                            <strong>{seciliTurBilgi.ad}:</strong> {seciliTurBilgi.not}
-                                        </div>
-                                        {talepGun > 0 && (
-                                            <div className="text-sm text-slate-600">
-                                                <i className="fas fa-clock text-slate-400 mr-1"></i>
-                                                Bu kayıt <strong>{talepGun} iş günü</strong> (hafta sonu ve resmi tatiller hariç).
-                                            </div>
-                                        )}
-                                        {talepTur === 'Avans İzin' && seciliPer && talepGun > 0 && (
-                                            <div className="text-sm bg-purple-50 border border-purple-200 text-purple-800 px-3 py-2 rounded-lg">
-                                                <i className="fas fa-hand-holding-dollar mr-1"></i>
-                                                Avans izin: {seciliPer.ad} bakiyesi <strong>{seciliPer.kalan - talepGun} güne</strong> düşecek.
-                                                {seciliPer.kidem < 1 && ' Personelin 1 yılı dolmadığı için bu gün sayısı, yıllık izne hak kazandığında ilk yıl hakkından mahsup edilir.'}
-                                            </div>
-                                        )}
-                                        {bakiyeAsimi > 0 && (
-                                            <div className="text-sm bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg">
-                                                <i className="fas fa-triangle-exclamation mr-1"></i>
-                                                Bakiye aşımı: {seciliPer.ad} için bekleyenler dahil <strong>{bakiyeAsimi} gün</strong> fazla.
-                                                {seciliPer.kidem < 1 && ' Personelin 1 yılı dolmamış — "Avans İzin" türünü kullanmak isteyebilirsiniz.'}
-                                            </div>
-                                        )}
-                                        {cakisanlar.length > 0 && (
-                                            <div className="text-sm bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-lg">
-                                                <i className="fas fa-users mr-1"></i>
-                                                Aynı departmanda bu tarihlerde izinli: <strong>{cakisanlar.join(', ')}</strong>
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
 
                                 <div className="flex gap-2 mb-4">
-                                    {[['hepsi', 'Hepsi'], ['bekliyor', 'Bekleyen'], ['onaylandi', 'Onaylı'], ['reddedildi', 'Reddedilen']].map(([k, l]) => (
-                                        <button key={k} onClick={() => setDurumFiltre(k)}
-                                            className={`px-3 py-1.5 rounded-lg text-sm ${durumFiltre === k ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>{l}</button>
+                                    {[['hepsi', 'Tüm Kayıtlar'], ['bekliyor', 'Bekleyenler'], ['onaylandi', 'Onaylı İzinler'], ['reddedildi', 'Reddedilenler']].map(([k, l]) => (
+                                        <button key={k} onClick={() => setDurumFiltre(k)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${durumFiltre === k ? 'bg-slate-800 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>{l}</button>
                                     ))}
                                 </div>
 
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {filtreliTalepler.map(talep => {
                                         const per = perFor(talep.personel_id);
                                         if (!per) return null;
-                                        const sure = isGunuHesapla(talep.baslangic, talep.bitis);
                                         const tb = turBilgi(talep.tur || 'Yıllık İzin');
                                         return (
-                                            <div key={talep.id} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex items-center justify-between gap-4 flex-wrap">
-                                                <div className="flex-1 min-w-[240px]">
-                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                        <span className="font-bold text-slate-800">{per.ad}</span>
-                                                        <Rozet ton="slate">{per.departman || '—'}</Rozet>
-                                                        <Rozet ton={tb.renk}>{talep.tur || 'Yıllık İzin'}</Rozet>
-                                                        <Rozet ton={DURUM_TON[talep.durum]}>{DURUM_ETIKET[talep.durum] || talep.durum}</Rozet>
-                                                        {!tb.duser && <span className="text-xs text-slate-400">bakiyeden düşmez</span>}
+                                            <div key={talep.id} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 hover:border-blue-100 transition-colors relative group">
+                                                <div className="absolute top-4 right-4 flex gap-2">
+                                                    <button onClick={() => setDuzenlenenTalep(talep)} className="w-8 h-8 flex items-center justify-center rounded bg-slate-50 text-blue-600 hover:bg-blue-100 transition-colors" title="Düzenle"><i className="fas fa-pencil-alt"></i></button>
+                                                    <button onClick={() => talepSil(talep.id)} className="w-8 h-8 flex items-center justify-center rounded bg-slate-50 text-red-500 hover:bg-red-100 transition-colors" title="Sil"><i className="fas fa-trash"></i></button>
+                                                </div>
+
+                                                <div className="flex items-center gap-3 mb-3 pr-20">
+                                                    <span className="font-bold text-lg text-slate-800">{per.ad}</span>
+                                                    <Rozet ton={tb.renk}>{talep.tur || 'Yıllık İzin'}</Rozet>
+                                                    <span className={`text-xs px-2 py-1 rounded border font-medium ${talep.durum === 'onaylandi' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : talep.durum === 'reddedildi' ? 'border-red-200 text-red-700 bg-red-50' : 'border-amber-200 text-amber-700 bg-amber-50'}`}>{talep.durum.toUpperCase()}</span>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-600">
+                                                    <div className="space-y-1.5 border-l-2 border-slate-100 pl-3">
+                                                        <div><i className="far fa-calendar-alt text-slate-400 w-5"></i> <strong>{trTarih(talep.baslangic)}</strong> — <strong>{trTarih(talep.bitis)}</strong></div>
+                                                        <div><i className="fas fa-briefcase text-slate-400 w-5"></i> İşe Dönüş: {talep.ise_donus_tarihi ? trTarih(talep.ise_donus_tarihi) : 'Belirtilmedi'}</div>
+                                                        <div><i className="fas fa-stopwatch text-slate-400 w-5"></i> Süre: <strong>{isGunuHesapla(talep.baslangic, talep.bitis)} iş günü</strong></div>
                                                     </div>
-                                                    <div className="text-sm text-slate-600 flex items-center gap-4 flex-wrap">
-                                                        <span><i className="far fa-calendar-alt mr-1"></i>{trTarih(talep.baslangic)} <i className="fas fa-arrow-right text-xs mx-1"></i> {trTarih(talep.bitis)}</span>
-                                                        <span className="font-medium text-slate-800">{sure} iş günü</span>
-                                                        {talep.aciklama && <span className="text-slate-400">{talep.aciklama}</span>}
+                                                    <div className="space-y-1.5 border-l-2 border-slate-100 pl-3">
+                                                        <div><i className="fas fa-phone text-slate-400 w-5"></i> {talep.telefon || 'Telefon belirtilmedi'}</div>
+                                                        <div><i className="fas fa-location-dot text-slate-400 w-5"></i> {talep.adres || 'Adres belirtilmedi'}</div>
+                                                        {talep.aciklama && <div><i className="fas fa-comment-dots text-slate-400 w-5"></i> {talep.aciklama}</div>}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+
+                                                <div className="mt-4 pt-4 border-t border-slate-50 flex gap-2">
                                                     {talep.durum === 'bekliyor' && (
                                                         <React.Fragment>
-                                                            <button onClick={() => talepGuncelle(talep.id, 'onaylandi')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700">Onayla</button>
-                                                            <button onClick={() => talepGuncelle(talep.id, 'reddedildi')} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm border border-red-200 hover:bg-red-100">Reddet</button>
+                                                            <button onClick={() => talepDurumDegistir(talep.id, 'onaylandi')} className="bg-emerald-600 text-white px-5 py-1.5 rounded text-sm hover:bg-emerald-700 font-medium">Onayla</button>
+                                                            <button onClick={() => talepDurumDegistir(talep.id, 'reddedildi')} className="bg-white text-red-600 px-5 py-1.5 rounded text-sm border border-red-200 hover:bg-red-50 font-medium">Reddet</button>
                                                         </React.Fragment>
                                                     )}
                                                     {talep.durum !== 'bekliyor' && (
-                                                        <button onClick={() => talepGuncelle(talep.id, 'bekliyor')} className="text-slate-500 px-3 py-2 rounded-lg text-sm border border-slate-200 hover:bg-slate-50">Beklemeye al</button>
+                                                        <button onClick={() => talepDurumDegistir(talep.id, 'bekliyor')} className="text-slate-500 px-5 py-1.5 rounded text-sm border border-slate-200 hover:bg-slate-50">Durumu 'Bekliyor' Yap</button>
                                                     )}
-                                                    <button onClick={() => talepSil(talep.id)} className="text-slate-400 hover:text-red-600 px-2"><i className="fas fa-trash"></i></button>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                     {filtreliTalepler.length === 0 && (
-                                        <div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400">Bu filtrede kayıt yok.</div>
+                                        <div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400">Bu sekmede kayıt bulunmamaktadır.</div>
                                     )}
                                 </div>
                             </div>
