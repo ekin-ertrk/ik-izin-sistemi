@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>İK Özel İzin Takip Paneli - Veritabanı Bağlantılı</title>
+    <title>İK İzin Takip Paneli</title>
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@7/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -19,65 +19,150 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // Supabase Bağlantısı
         const supabaseUrl = 'https://rgscapgpdiybytlzbbkb.supabase.co';
         const supabaseKey = 'sb_publishable_idM-Y-RSFKPpQ7RtekBzNw_fppVcucc';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        const RESMI_TATILLER = [
-            '2026-01-01', '2026-04-23', '2026-05-01', '2026-05-19', '2026-07-15', '2026-08-30', '2026-10-29',
-            '2026-03-20', '2026-03-21', '2026-03-22', '2026-05-27', '2026-05-28', '2026-05-29', '2026-05-30'
+        /* İzin türleri — hangisi bakiyeden düşer? */
+        const IZIN_TURLERI = [
+            { ad: 'Yıllık İzin',    duser: true,  renk: 'blue',   not: 'Bakiyeden düşer.' },
+            { ad: 'Avans İzin',     duser: true,  renk: 'purple', not: 'Bakiyeden düşer; 1 yılı dolmayan personel de kullanabilir.' },
+            { ad: 'Ücretsiz İzin',  duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.' },
+            { ad: 'Mazeret İzni',   duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.' },
+            { ad: 'Hastalık/Rapor', duser: false, renk: 'slate',  not: 'Bakiyeden düşmez.' }
         ];
+        const turBilgi = (ad) => IZIN_TURLERI.find(t => t.ad === ad) || IZIN_TURLERI[0];
+        const BAKIYEDEN_DUSER = new Set(IZIN_TURLERI.filter(t => t.duser).map(t => t.ad));
 
-        const isGunuHesapla = (baslangicStr, bitisStr) => {
-            if (!baslangicStr || !bitisStr) return 0;
-            let baslangic = new Date(baslangicStr);
-            let bitis = new Date(bitisStr);
-            if (baslangic > bitis) return 0;
-            let isGunu = 0;
-            let current = new Date(baslangic);
-            while (current <= bitis) {
-                let day = current.getDay();
-                let dateStr = current.toISOString().split('T')[0];
-                if (day !== 0 && day !== 6 && !RESMI_TATILLER.includes(dateStr)) {
-                    isGunu++;
-                }
-                current.setDate(current.getDate() + 1);
+        const RESMI_TATILLER = new Set([
+            '2026-01-01', '2026-04-23', '2026-05-01', '2026-05-19', '2026-07-15', '2026-08-30', '2026-10-29',
+            '2026-03-20', '2026-03-21', '2026-03-22', '2026-05-27', '2026-05-28', '2026-05-29', '2026-05-30',
+            '2027-01-01', '2027-04-23', '2027-05-01', '2027-05-19', '2027-07-15', '2027-08-30', '2027-10-29'
+        ]);
+
+        /* ---------- Tarih yardımcıları ---------- */
+        const parseISO = (iso) => {
+            if (!iso) return null;
+            const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+        };
+        const toISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const trTarih = (iso) => { const d = parseISO(iso); return d ? d.toLocaleDateString('tr-TR') : '—'; };
+
+        /* ---------- İş Kanunu hesapları ---------- */
+        const tamYil = (iso, ref = new Date()) => {
+            const f = parseISO(iso);
+            if (!f) return null;
+            let y = ref.getFullYear() - f.getFullYear();
+            const m = ref.getMonth() - f.getMonth();
+            if (m < 0 || (m === 0 && ref.getDate() < f.getDate())) y--;
+            return y;
+        };
+        const izinYili = (iso, ref = new Date()) => {
+            const f = parseISO(iso);
+            if (!f) return null;
+            let bas = new Date(ref.getFullYear(), f.getMonth(), f.getDate());
+            if (bas > ref) bas = new Date(ref.getFullYear() - 1, f.getMonth(), f.getDate());
+            const bit = new Date(bas.getFullYear() + 1, bas.getMonth(), bas.getDate());
+            bit.setDate(bit.getDate() - 1);
+            return { bas, bit };
+        };
+        const yillikIzinHakki = (kidem, minYirmi) => {
+            if (kidem == null || kidem < 1) return 0;
+            let gun = kidem <= 5 ? 14 : (kidem < 15 ? 20 : 26);
+            if (minYirmi) gun = Math.max(gun, 20);
+            return gun;
+        };
+        const isGunuHesapla = (bas, bit) => {
+            const s = parseISO(bas), e = parseISO(bit);
+            if (!s || !e || e < s) return 0;
+            let n = 0;
+            const cur = new Date(s);
+            while (cur <= e) {
+                const g = cur.getDay();
+                if (g !== 0 && g !== 6 && !RESMI_TATILLER.has(toISO(cur))) n++;
+                cur.setDate(cur.getDate() + 1);
             }
-            return isGunu;
+            return n;
+        };
+        const araliktaMi = (iso, bas, bit) => { const d = parseISO(iso); return d && d >= bas && d <= bit; };
+        const cakisir = (aB, aE, bB, bE) => {
+            const a1 = parseISO(aB), a2 = parseISO(aE), b1 = parseISO(bB), b2 = parseISO(bE);
+            return a1 && a2 && b1 && b2 && a1 <= b2 && b1 <= a2;
         };
 
-        const yasHesapla = (dogumTarihiStr) => {
-            if(!dogumTarihiStr) return 30;
-            const today = new Date();
-            const birthDate = new Date(dogumTarihiStr);
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const m = today.getMonth() - birthDate.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-            return age;
+        /* ---------- UI parçaları ---------- */
+        const TONLAR = {
+            emerald: 'bg-emerald-100 text-emerald-700',
+            amber: 'bg-amber-100 text-amber-700',
+            red: 'bg-red-100 text-red-700',
+            slate: 'bg-slate-100 text-slate-600',
+            blue: 'bg-blue-100 text-blue-700',
+            purple: 'bg-purple-100 text-purple-700'
         };
+        const Rozet = ({ children, ton }) => (
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${TONLAR[ton] || TONLAR.slate}`}>{children}</span>
+        );
+        const DURUM_ETIKET = { onaylandi: 'Onaylandı', bekliyor: 'Bekliyor', reddedildi: 'Reddedildi' };
+        const DURUM_TON = { onaylandi: 'emerald', bekliyor: 'amber', reddedildi: 'red' };
 
-        const kidemYiliHesapla = (iseBaslamaStr) => {
-            if(!iseBaslamaStr) return 0;
-            const today = new Date();
-            const startDate = new Date(iseBaslamaStr);
-            let diff = (today - startDate) / (1000 * 60 * 60 * 24 * 365.25);
-            return Math.floor(diff);
-        };
+        const inputCls = "w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+        const Etiket = ({ children }) => <label className="block text-xs font-medium text-slate-500 mb-1">{children}</label>;
 
-        const yillikIzinHakkiHesapla = (iseBaslamaStr, dogumTarihiStr) => {
-            const kidem = kidemYiliHesapla(iseBaslamaStr);
-            const yas = yasHesapla(dogumTarihiStr);
-            if (kidem < 1) return 0;
-            let toplamHak = 0;
-            for (let i = 1; i <= kidem; i++) {
-                let yillikHak = 14;
-                if (i >= 5 && i < 15) yillikHak = 20;
-                if (i >= 15) yillikHak = 26;
-                if (yas <= 18 || yas >= 50) yillikHak = Math.max(yillikHak, 20);
-                toplamHak += yillikHak;
-            }
-            return toplamHak;
+        /* ---------- Personel düzenleme penceresi ---------- */
+        const DuzenlePenceresi = ({ personel, onKaydet, onKapat }) => {
+            const [ad, setAd] = useState(personel.ad || '');
+            const [departman, setDepartman] = useState(personel.departman || '');
+            const [iseBaslama, setIseBaslama] = useState((personel.ise_baslama || '').slice(0, 10));
+            const [devreden, setDevreden] = useState(String(personel.devreden == null ? 0 : personel.devreden));
+            const [minYirmi, setMinYirmi] = useState(!!personel.min_yirmi);
+            const [kaydediliyor, setKaydediliyor] = useState(false);
+
+            const kaydet = async (e) => {
+                e.preventDefault();
+                setKaydediliyor(true);
+                await onKaydet(personel.id, {
+                    ad: ad.trim(), departman: departman.trim(),
+                    ise_baslama: iseBaslama, devreden: Number(devreden) || 0,
+                    min_yirmi: minYirmi
+                });
+                setKaydediliyor(false);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4" onClick={onKapat}>
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-slate-800">Personeli düzenle</h3>
+                            <button onClick={onKapat} className="text-slate-400 hover:text-slate-700"><i className="fas fa-xmark"></i></button>
+                        </div>
+                        <form onSubmit={kaydet} className="space-y-4">
+                            <div><Etiket>Ad Soyad *</Etiket><input required value={ad} onChange={e => setAd(e.target.value)} className={inputCls} /></div>
+                            <div><Etiket>Departman</Etiket><input value={departman} onChange={e => setDepartman(e.target.value)} className={inputCls} /></div>
+                            <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={iseBaslama} onChange={e => setIseBaslama(e.target.value)} className={inputCls} /></div>
+                            <div>
+                                <Etiket>Devreden izin (gün)</Etiket>
+                                <input type="number" value={devreden} onChange={e => setDevreden(e.target.value)} className={inputCls} />
+                                <p className="text-xs text-slate-400 mt-1">Avans borcu devrediliyorsa eksi yazın (örn. -5).</p>
+                            </div>
+                            <label className="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" checked={minYirmi} onChange={e => setMinYirmi(e.target.checked)} className="mt-1" />
+                                <span className="text-sm text-slate-600">
+                                    En az 20 gün izin hakkı
+                                    <span className="block text-xs text-slate-400">18 yaş ve altı ile 50 yaş ve üzeri çalışanlar için işaretleyin.</span>
+                                </span>
+                            </label>
+                            <div className="flex gap-2 pt-2">
+                                <button type="submit" disabled={kaydediliyor} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                                    {kaydediliyor ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
+                                </button>
+                                <button type="button" onClick={onKapat} className="px-4 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50">Vazgeç</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
         };
 
         const App = () => {
@@ -85,257 +170,445 @@
             const [personeller, setPersoneller] = useState([]);
             const [talepler, setTalepler] = useState([]);
             const [aramaMetni, setAramaMetni] = useState('');
+            const [durumFiltre, setDurumFiltre] = useState('hepsi');
+            const [yukleniyor, setYukleniyor] = useState(true);
+            const [hataMesaji, setHataMesaji] = useState('');
+            const [duzenlenen, setDuzenlenen] = useState(null);
 
-            // Personel Ekleme State'leri
             const [yeniAd, setYeniAd] = useState('');
             const [yeniDepartman, setYeniDepartman] = useState('');
             const [yeniIseBaslama, setYeniIseBaslama] = useState('');
-            const [yeniDogumTarihi, setYeniDogumTarihi] = useState('');
+            const [yeniDevreden, setYeniDevreden] = useState('0');
+            const [yeniMinYirmi, setYeniMinYirmi] = useState(false);
 
-            // İzin Ekleme State'leri
             const [talepPersonelId, setTalepPersonelId] = useState('');
+            const [talepTur, setTalepTur] = useState('Yıllık İzin');
             const [talepBaslangic, setTalepBaslangic] = useState('');
             const [talepBitis, setTalepBitis] = useState('');
+            const [talepAciklama, setTalepAciklama] = useState('');
 
             useEffect(() => {
-                const veriGetir = async () => {
-                    const { data: pData } = await supabase.from('personeller').select('*');
+                (async () => {
+                    const { data: pData, error: pErr } = await supabase.from('personeller').select('*').order('ad');
+                    const { data: tData, error: tErr } = await supabase.from('talepler').select('*').order('baslangic', { ascending: false });
+                    if (pErr || tErr) setHataMesaji((pErr || tErr).message);
                     if (pData) setPersoneller(pData);
-                    const { data: tData } = await supabase.from('talepler').select('*');
                     if (tData) setTalepler(tData);
-                };
-                veriGetir();
+                    setYukleniyor(false);
+                })();
             }, []);
 
+            const personelDurumlari = useMemo(() => {
+                return personeller.map(p => {
+                    const kidem = tamYil(p.ise_baslama);
+                    const yil = izinYili(p.ise_baslama);
+                    const hakEdilen = yillikIzinHakki(kidem, p.min_yirmi);
+                    const devreden = Number(p.devreden) || 0;
+                    const toplamHak = hakEdilen + devreden;
+
+                    const buYil = talepler.filter(t =>
+                        String(t.personel_id) === String(p.id) &&
+                        yil && araliktaMi(t.baslangic, yil.bas, yil.bit)
+                    );
+                    const dusenOnayli = buYil.filter(t => t.durum === 'onaylandi' && BAKIYEDEN_DUSER.has(t.tur || 'Yıllık İzin'));
+                    const kullanilanGun = dusenOnayli.reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    const avansGun = dusenOnayli.filter(t => t.tur === 'Avans İzin')
+                        .reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    const bekleyenGun = buYil.filter(t => t.durum === 'bekliyor' && BAKIYEDEN_DUSER.has(t.tur || 'Yıllık İzin'))
+                        .reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+                    const dusmeyenGun = buYil.filter(t => t.durum === 'onaylandi' && !BAKIYEDEN_DUSER.has(t.tur || 'Yıllık İzin'))
+                        .reduce((s, t) => s + isGunuHesapla(t.baslangic, t.bitis), 0);
+
+                    return {
+                        ...p, kidem, hakEdilen, devreden, toplamHak,
+                        kullanilanGun, avansGun, bekleyenGun, dusmeyenGun,
+                        kalan: toplamHak - kullanilanGun,
+                        yilBas: yil ? toISO(yil.bas) : null,
+                        yilBit: yil ? toISO(yil.bit) : null
+                    };
+                });
+            }, [personeller, talepler]);
+
+            const perFor = (id) => personelDurumlari.find(p => String(p.id) === String(id));
+
+            const seciliPer = perFor(talepPersonelId);
+            const talepGun = isGunuHesapla(talepBaslangic, talepBitis);
+            const seciliTurBilgi = turBilgi(talepTur);
+            const bakiyeAsimi = (seciliPer && talepTur === 'Yıllık İzin' && talepGun > 0)
+                ? talepGun - (seciliPer.kalan - seciliPer.bekleyenGun) : 0;
+            const cakisanlar = (seciliPer && talepBaslangic && talepBitis)
+                ? [...new Set(talepler.filter(t => {
+                    if (t.durum === 'reddedildi') return false;
+                    const o = perFor(t.personel_id);
+                    return o && String(o.id) !== String(seciliPer.id) &&
+                        o.departman === seciliPer.departman &&
+                        cakisir(talepBaslangic, talepBitis, t.baslangic, t.bitis);
+                }).map(t => perFor(t.personel_id).ad))]
+                : [];
+
+            /* ---------- Aksiyonlar ---------- */
             const personelEkle = async (e) => {
                 e.preventDefault();
-                try {
-                    const { data, error } = await supabase
-                        .from('personeller')
-                        .insert([{ ad: yeniAd, departman: yeniDepartman, ise_baslama: yeniIseBaslama, dogum_tarihi: yeniDogumTarihi }])
-                        .select();
-                    
-                    if (error) {
-                        alert("Veritabanı Hatası: " + error.message);
-                        console.error("Detaylı Hata:", error);
-                    } else if (data) {
-                        setPersoneller([...personeller, data[0]]);
-                        setYeniAd(''); setYeniDepartman(''); setYeniIseBaslama(''); setYeniDogumTarihi('');
-                        alert("Personel başarıyla eklendi!");
-                    }
-                } catch (err) {
-                    alert("Bağlantı Hatası: " + err.message);
-                }
+                const { data, error } = await supabase.from('personeller').insert([{
+                    ad: yeniAd.trim(), departman: yeniDepartman.trim(),
+                    ise_baslama: yeniIseBaslama, devreden: Number(yeniDevreden) || 0,
+                    min_yirmi: yeniMinYirmi
+                }]).select();
+                if (error) return setHataMesaji('Personel eklenemedi: ' + error.message);
+                setPersoneller([...personeller, data[0]].sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')));
+                setYeniAd(''); setYeniDepartman(''); setYeniIseBaslama(''); setYeniDevreden('0'); setYeniMinYirmi(false);
+                setHataMesaji('');
             };
 
-            const personelSil = async (id) => {
+            const personelGuncelle = async (id, alanlar) => {
+                const { error } = await supabase.from('personeller').update(alanlar).eq('id', id);
+                if (error) { setHataMesaji('Güncellenemedi: ' + error.message); return; }
+                setPersoneller(personeller.map(p => p.id === id ? { ...p, ...alanlar } : p)
+                    .sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')));
+                setDuzenlenen(null);
+                setHataMesaji('');
+            };
+
+            const personelSil = async (id, ad) => {
+                if (!window.confirm(`${ad} ve tüm izin kayıtları silinecek. Devam edilsin mi?`)) return;
                 const { error } = await supabase.from('personeller').delete().eq('id', id);
-                if (!error) setPersoneller(personeller.filter(p => p.id !== id));
+                if (error) return setHataMesaji('Silinemedi: ' + error.message);
+                setPersoneller(personeller.filter(p => p.id !== id));
+                setTalepler(talepler.filter(t => String(t.personel_id) !== String(id)));
             };
 
             const talepEkle = async (e) => {
                 e.preventDefault();
-                try {
-                    const { data, error } = await supabase
-                        .from('talepler')
-                        .insert([{ personel_id: talepPersonelId, baslangic: talepBaslangic, bitis: talepBitis, durum: 'onaylandi' }])
-                        .select();
-                        
-                    if (error) {
-                        alert("İzin Eklerken Hata Oluştu: " + error.message);
-                    } else if (data) {
-                        setTalepler([...talepler, data[0]]);
-                        setTalepPersonelId(''); setTalepBaslangic(''); setTalepBitis('');
-                        alert("İzin başarıyla eklendi!");
-                    }
-                } catch (err) {
-                    alert("Bağlantı Hatası: " + err.message);
-                }
+                if (parseISO(talepBitis) < parseISO(talepBaslangic))
+                    return setHataMesaji('Bitiş tarihi başlangıçtan önce olamaz.');
+                const { data, error } = await supabase.from('talepler').insert([{
+                    personel_id: talepPersonelId, tur: talepTur,
+                    baslangic: talepBaslangic, bitis: talepBitis,
+                    durum: 'bekliyor', aciklama: talepAciklama.trim() || null
+                }]).select();
+                if (error) return setHataMesaji('İzin eklenemedi: ' + error.message);
+                setTalepler([data[0], ...talepler]);
+                setTalepBaslangic(''); setTalepBitis(''); setTalepAciklama('');
+                setHataMesaji('');
             };
 
             const talepGuncelle = async (id, yeniDurum) => {
                 const { error } = await supabase.from('talepler').update({ durum: yeniDurum }).eq('id', id);
-                if (!error) {
-                    setTalepler(talepler.map(t => t.id === id ? {...t, durum: yeniDurum} : t));
-                }
+                if (error) return setHataMesaji('Güncellenemedi: ' + error.message);
+                setTalepler(talepler.map(t => t.id === id ? { ...t, durum: yeniDurum } : t));
             };
 
-            const personelDurumlari = useMemo(() => {
-                return personeller.map(p => {
-                    const hakEdilen = yillikIzinHakkiHesapla(p.ise_baslama, p.dogum_tarihi);
-                    const kidem = kidemYiliHesapla(p.ise_baslama);
-                    const kullanilanTalepler = talepler.filter(t => t.personel_id === p.id && t.durum === 'onaylandi');
-                    const kullanilanGun = kullanilanTalepler.reduce((toplam, t) => toplam + isGunuHesapla(t.baslangic, t.bitis), 0);
-                    const bekleyenTalepler = talepler.filter(t => t.personel_id === p.id && t.durum === 'bekliyor');
-                    const bekleyenGun = bekleyenTalepler.reduce((toplam, t) => toplam + isGunuHesapla(t.baslangic, t.bitis), 0);
-                    return { ...p, hakEdilen, kullanilanGun, kalan: hakEdilen - kullanilanGun, bekleyenGun, kidem };
-                });
-            }, [personeller, talepler]);
+            const talepSil = async (id) => {
+                if (!window.confirm('Bu izin kaydı silinsin mi?')) return;
+                const { error } = await supabase.from('talepler').delete().eq('id', id);
+                if (error) return setHataMesaji('Silinemedi: ' + error.message);
+                setTalepler(talepler.filter(t => t.id !== id));
+            };
+
+            const filtreliPersonel = personelDurumlari.filter(p =>
+                (p.ad || '').toLowerCase().includes(aramaMetni.toLowerCase()) ||
+                (p.departman || '').toLowerCase().includes(aramaMetni.toLowerCase())
+            );
+            const bekleyenSayi = talepler.filter(t => t.durum === 'bekliyor').length;
+            const filtreliTalepler = talepler
+                .filter(t => durumFiltre === 'hepsi' || t.durum === durumFiltre)
+                .slice()
+                .sort((a, b) => (a.durum === 'bekliyor' ? 0 : 1) - (b.durum === 'bekliyor' ? 0 : 1));
+
+            const navBtn = (key, icon, label, badge) => (
+                <button key={key} onClick={() => setActiveTab(key)}
+                    className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab === key ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    <i className={`fas ${icon} w-6`}></i>
+                    <span className="flex-1 text-left">{label}</span>
+                    {badge > 0 && <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{badge}</span>}
+                </button>
+            );
 
             return (
                 <div className="flex h-screen overflow-hidden">
+                    {duzenlenen && (
+                        <DuzenlePenceresi personel={duzenlenen} onKaydet={personelGuncelle} onKapat={() => setDuzenlenen(null)} />
+                    )}
+
                     <div className="w-64 bg-white shadow-xl flex flex-col z-10">
                         <div className="p-6 border-b border-slate-100">
                             <h1 className="text-xl font-bold text-blue-600"><i className="fas fa-leaf mr-2"></i>İK İzin Takip</h1>
+                            <p className="text-xs text-slate-400 mt-1">Yıllık izin yılı modeli</p>
                         </div>
                         <nav className="flex-1 p-4 space-y-2">
-                            <button onClick={() => setActiveTab('ozet')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='ozet' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
-                                <i className="fas fa-chart-pie w-6"></i> Bakiye ve Özet
-                            </button>
-                            <button onClick={() => setActiveTab('personel')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='personel' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
-                                <i className="fas fa-users w-6"></i> Personel Listesi
-                            </button>
-                            <button onClick={() => setActiveTab('talepler')} className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeTab==='talepler' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
-                                <i className="fas fa-calendar-check w-6"></i> İzin İşlemleri
-                            </button>
+                            {navBtn('ozet', 'fa-chart-pie', 'Bakiye ve Özet')}
+                            {navBtn('personel', 'fa-users', 'Personel Listesi')}
+                            {navBtn('talepler', 'fa-calendar-check', 'İzin İşlemleri', bekleyenSayi)}
                         </nav>
+                        <div className="p-4 text-xs text-slate-400 border-t border-slate-100">
+                            İzin yılı, personelin işe giriş yıldönümünden başlar.
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-auto p-8">
-                        
-                        {activeTab === 'ozet' && (
+                        {hataMesaji && (
+                            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex justify-between">
+                                <span><i className="fas fa-circle-exclamation mr-2"></i>{hataMesaji}</span>
+                                <button onClick={() => setHataMesaji('')} className="font-medium">Kapat</button>
+                            </div>
+                        )}
+                        {yukleniyor && <div className="text-slate-500">Veriler yükleniyor…</div>}
+
+                        {/* ---------- ÖZET ---------- */}
+                        {!yukleniyor && activeTab === 'ozet' && (
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 mb-6">İK Kontrol Paneli</h2>
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                        <h3 className="font-semibold text-slate-700">İzin Bakiye Durumları</h3>
-                                        <input type="text" placeholder="İsim veya departman ara..." className="pl-4 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} />
+                                <div className="grid grid-cols-4 gap-4 mb-6">
+                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
+                                        <div className="text-xs text-slate-500">Personel</div>
+                                        <div className="text-2xl font-bold text-slate-800">{personeller.length}</div>
                                     </div>
+                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
+                                        <div className="text-xs text-slate-500">Onay bekleyen</div>
+                                        <div className={`text-2xl font-bold ${bekleyenSayi ? 'text-amber-600' : 'text-slate-800'}`}>{bekleyenSayi}</div>
+                                    </div>
+                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
+                                        <div className="text-xs text-slate-500">Avans kullanan</div>
+                                        <div className="text-2xl font-bold text-purple-600">{personelDurumlari.filter(p => p.avansGun > 0).length}</div>
+                                    </div>
+                                    <div className="bg-white rounded-xl border border-slate-100 p-4">
+                                        <div className="text-xs text-slate-500">Bakiyesi eksiye düşen</div>
+                                        <div className="text-2xl font-bold text-red-600">{personelDurumlari.filter(p => p.kalan < 0).length}</div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 gap-4">
+                                        <h3 className="font-semibold text-slate-700 whitespace-nowrap">Bu izin yılı bakiyeleri</h3>
+                                        <input type="text" placeholder="İsim veya departman ara..." className={inputCls + ' max-w-xs'}
+                                            value={aramaMetni} onChange={(e) => setAramaMetni(e.target.value)} />
+                                    </div>
+                                    <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
                                             <tr className="bg-white text-slate-500 text-sm border-b">
                                                 <th className="p-4 font-medium">Personel</th>
-                                                <th className="p-4 font-medium">Departman</th>
+                                                <th className="p-4 font-medium">İzin Yılı</th>
                                                 <th className="p-4 font-medium">Kıdem</th>
-                                                <th className="p-4 font-medium">Toplam Hak</th>
-                                                <th className="p-4 font-medium">Kalan İzin</th>
+                                                <th className="p-4 font-medium">Hak + Devreden</th>
+                                                <th className="p-4 font-medium">Kullanılan</th>
+                                                <th className="p-4 font-medium">Kalan</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {personelDurumlari.filter(p => p.ad.toLowerCase().includes(aramaMetni.toLowerCase()) || p.departman.toLowerCase().includes(aramaMetni.toLowerCase())).map(p => (
+                                            {filtreliPersonel.map(p => (
                                                 <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
-                                                    <td className="p-4 font-medium text-slate-800">{p.ad}</td>
-                                                    <td className="p-4 text-slate-600">{p.departman}</td>
-                                                    <td className="p-4 text-slate-600">{p.kidem} Yıl</td>
-                                                    <td className="p-4 text-slate-600">{p.hakEdilen} Gün</td>
-                                                    <td className="p-4 font-bold">{p.kalan} Gün</td>
+                                                    <td className="p-4">
+                                                        <div className="font-medium text-slate-800">{p.ad}</div>
+                                                        <div className="text-xs text-slate-500">{p.departman}</div>
+                                                    </td>
+                                                    <td className="p-4 text-xs text-slate-500">
+                                                        {p.yilBas ? `${trTarih(p.yilBas)} – ${trTarih(p.yilBit)}` : '—'}
+                                                    </td>
+                                                    <td className="p-4 text-slate-600">{p.kidem} yıl</td>
+                                                    <td className="p-4 text-slate-600">
+                                                        {p.hakEdilen}{p.devreden ? ` ${p.devreden > 0 ? '+' : '−'} ${Math.abs(p.devreden)}` : ''} = <strong>{p.toplamHak}</strong>
+                                                    </td>
+                                                    <td className="p-4 text-slate-600">
+                                                        {p.kullanilanGun} gün
+                                                        <div className="mt-1 flex gap-1 flex-wrap">
+                                                            {p.avansGun > 0 && <Rozet ton="purple">{p.avansGun} avans</Rozet>}
+                                                            {p.bekleyenGun > 0 && <Rozet ton="amber">+{p.bekleyenGun} bekliyor</Rozet>}
+                                                            {p.dusmeyenGun > 0 && <Rozet ton="slate">{p.dusmeyenGun} düşmeyen</Rozet>}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`font-bold ${p.kalan < 0 ? 'text-red-600' : p.kalan === 0 ? 'text-slate-500' : 'text-emerald-600'}`}>
+                                                            {p.kalan} gün
+                                                        </span>
+                                                        {p.kalan < 0 && <div className="mt-1"><Rozet ton="red">{Math.abs(p.kalan)} gün borç</Rozet></div>}
+                                                        {p.kidem < 1 && <div className="mt-1"><Rozet ton="slate">1 yılı dolmadı</Rozet></div>}
+                                                    </td>
                                                 </tr>
                                             ))}
+                                            {filtreliPersonel.length === 0 && (
+                                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">Kayıt bulunamadı.</td></tr>
+                                            )}
                                         </tbody>
                                     </table>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'personel' && (
+                        {/* ---------- PERSONEL ---------- */}
+                        {!yukleniyor && activeTab === 'personel' && (
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 mb-6">Personel Yönetimi</h2>
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
-                                    <form className="flex gap-4 items-end" onSubmit={personelEkle}>
-                                        <div className="flex-1">
-                                            <label className="block text-xs font-medium text-slate-500 mb-1">Ad Soyad</label>
-                                            <input required value={yeniAd} onChange={e=>setYeniAd(e.target.value)} type="text" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                    <h3 className="font-semibold text-slate-800 mb-4">Personel ekle</h3>
+                                    <form className="grid grid-cols-5 gap-4 items-end" onSubmit={personelEkle}>
+                                        <div><Etiket>Ad Soyad *</Etiket><input required value={yeniAd} onChange={e => setYeniAd(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>Departman</Etiket><input value={yeniDepartman} onChange={e => setYeniDepartman(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>İşe Başlama *</Etiket><input required type="date" value={yeniIseBaslama} onChange={e => setYeniIseBaslama(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>Devreden (gün)</Etiket><input type="number" value={yeniDevreden} onChange={e => setYeniDevreden(e.target.value)} className={inputCls} /></div>
+                                        <div className="flex gap-2 items-end">
+                                            <label className="flex items-center gap-2 text-xs text-slate-600 flex-1 pb-2">
+                                                <input type="checkbox" checked={yeniMinYirmi} onChange={e => setYeniMinYirmi(e.target.checked)} />
+                                                En az 20 gün
+                                            </label>
+                                            <button type="submit" className="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 h-[38px]">Ekle</button>
                                         </div>
-                                        <div className="flex-1">
-                                            <label className="block text-xs font-medium text-slate-500 mb-1">Departman</label>
-                                            <input required value={yeniDepartman} onChange={e=>setYeniDepartman(e.target.value)} type="text" className="w-full border rounded-lg px-3 py-2 text-sm" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-xs font-medium text-slate-500 mb-1">İşe Başlama</label>
-                                            <input required value={yeniIseBaslama} onChange={e=>setYeniIseBaslama(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-xs font-medium text-slate-500 mb-1">Doğum Tarihi</label>
-                                            <input required value={yeniDogumTarihi} onChange={e=>setYeniDogumTarihi(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
-                                        </div>
-                                        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">Ekle</button>
                                     </form>
+                                    <p className="text-xs text-slate-400 mt-3">
+                                        "En az 20 gün" kutusunu 18 yaş ve altı ile 50 yaş ve üzeri çalışanlar için işaretleyin (4857 md.53). Tüm bilgiler sonradan düzenlenebilir.
+                                    </p>
                                 </div>
 
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
                                             <tr className="bg-slate-50 text-slate-500 text-sm border-b">
                                                 <th className="p-4 font-medium">Ad Soyad</th>
                                                 <th className="p-4 font-medium">Departman</th>
                                                 <th className="p-4 font-medium">İşe Başlama</th>
-                                                <th className="p-4 font-medium">Doğum Tarihi</th>
+                                                <th className="p-4 font-medium">Kıdem</th>
+                                                <th className="p-4 font-medium">Devreden</th>
+                                                <th className="p-4 font-medium">Kural</th>
                                                 <th className="p-4 font-medium text-right">İşlem</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {personeller.map(p => (
+                                            {personelDurumlari.map(p => (
                                                 <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
                                                     <td className="p-4 font-medium text-slate-800">{p.ad}</td>
-                                                    <td className="p-4 text-slate-600">{p.departman}</td>
-                                                    <td className="p-4 text-slate-600">{p.ise_baslama}</td>
-                                                    <td className="p-4 text-slate-600">{p.dogum_tarihi}</td>
-                                                    <td className="p-4 text-right">
-                                                        <button onClick={() => personelSil(p.id)} className="text-red-500 hover:text-red-700"><i className="fas fa-trash"></i></button>
+                                                    <td className="p-4 text-slate-600">{p.departman || '—'}</td>
+                                                    <td className="p-4 text-slate-600">{trTarih(p.ise_baslama)}</td>
+                                                    <td className="p-4 text-slate-600">{p.kidem} yıl</td>
+                                                    <td className={`p-4 font-medium ${p.devreden < 0 ? 'text-red-600' : 'text-slate-600'}`}>{p.devreden} gün</td>
+                                                    <td className="p-4">{p.min_yirmi ? <Rozet ton="blue">En az 20 gün</Rozet> : <span className="text-slate-300 text-sm">—</span>}</td>
+                                                    <td className="p-4 text-right whitespace-nowrap">
+                                                        <button onClick={() => setDuzenlenen(p)} className="text-blue-600 hover:text-blue-800 mr-3" title="Düzenle"><i className="fas fa-pen-to-square"></i></button>
+                                                        <button onClick={() => personelSil(p.id, p.ad)} className="text-red-500 hover:text-red-700" title="Sil"><i className="fas fa-trash"></i></button>
                                                     </td>
                                                 </tr>
                                             ))}
+                                            {personeller.length === 0 && (
+                                                <tr><td colSpan="7" className="p-8 text-center text-slate-400">Henüz personel yok. Yukarıdaki formla ekleyin.</td></tr>
+                                            )}
                                         </tbody>
                                     </table>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'talepler' && (
+                        {/* ---------- TALEPLER ---------- */}
+                        {!yukleniyor && activeTab === 'talepler' && (
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-800 mb-6">İzin İşlemleri & Onaylar</h2>
+
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-8">
-                                    <h3 className="font-semibold text-slate-800 mb-4 border-b pb-2">Yeni İzin Kaydı Oluştur</h3>
-                                    <form className="flex flex-wrap gap-4 items-end" onSubmit={talepEkle}>
-                                        <div className="w-1/4 min-w-[200px]">
-                                            <label className="block text-xs font-medium text-slate-500 mb-1">Personel Seç</label>
-                                            <select required value={talepPersonelId} onChange={e=>setTalepPersonelId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white">
+                                    <h3 className="font-semibold text-slate-800 mb-4 border-b pb-2">Yeni izin kaydı oluştur</h3>
+                                    <form className="grid grid-cols-5 gap-4 items-end" onSubmit={talepEkle}>
+                                        <div>
+                                            <Etiket>Personel *</Etiket>
+                                            <select required value={talepPersonelId} onChange={e => setTalepPersonelId(e.target.value)} className={inputCls}>
                                                 <option value="">Seçiniz...</option>
-                                                {personelDurumlari.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.ad} (Kalan: {p.kalan} Gün)</option>
-                                                ))}
+                                                {personelDurumlari.map(p => <option key={p.id} value={p.id}>{p.ad} (Kalan: {p.kalan})</option>)}
                                             </select>
                                         </div>
-                                        <div className="flex-1 min-w-[150px]">
-                                            <label className="block text-xs font-medium text-slate-500 mb-1">Başlangıç</label>
-                                            <input required value={talepBaslangic} onChange={e=>setTalepBaslangic(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        <div>
+                                            <Etiket>İzin Türü *</Etiket>
+                                            <select value={talepTur} onChange={e => setTalepTur(e.target.value)} className={inputCls}>
+                                                {IZIN_TURLERI.map(t => <option key={t.ad} value={t.ad}>{t.ad}</option>)}
+                                            </select>
                                         </div>
-                                        <div className="flex-1 min-w-[150px]">
-                                            <label className="block text-xs font-medium text-slate-500 mb-1">Bitiş</label>
-                                            <input required value={talepBitis} onChange={e=>setTalepBitis(e.target.value)} type="date" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        <div><Etiket>Başlangıç *</Etiket><input required type="date" value={talepBaslangic} onChange={e => setTalepBaslangic(e.target.value)} className={inputCls} /></div>
+                                        <div><Etiket>Bitiş *</Etiket><input required type="date" value={talepBitis} onChange={e => setTalepBitis(e.target.value)} className={inputCls} /></div>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1"><Etiket>Açıklama</Etiket><input value={talepAciklama} onChange={e => setTalepAciklama(e.target.value)} className={inputCls} /></div>
+                                            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg h-[38px] self-end">Kaydet</button>
                                         </div>
-                                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">Kaydet</button>
                                     </form>
+
+                                    <div className="mt-4 space-y-2">
+                                        <div className="text-sm text-slate-500">
+                                            <i className="fas fa-circle-info mr-1"></i>
+                                            <strong>{seciliTurBilgi.ad}:</strong> {seciliTurBilgi.not}
+                                        </div>
+                                        {talepGun > 0 && (
+                                            <div className="text-sm text-slate-600">
+                                                <i className="fas fa-clock text-slate-400 mr-1"></i>
+                                                Bu kayıt <strong>{talepGun} iş günü</strong> (hafta sonu ve resmi tatiller hariç).
+                                            </div>
+                                        )}
+                                        {talepTur === 'Avans İzin' && seciliPer && talepGun > 0 && (
+                                            <div className="text-sm bg-purple-50 border border-purple-200 text-purple-800 px-3 py-2 rounded-lg">
+                                                <i className="fas fa-hand-holding-dollar mr-1"></i>
+                                                Avans izin: {seciliPer.ad} bakiyesi <strong>{seciliPer.kalan - talepGun} güne</strong> düşecek.
+                                                {seciliPer.kidem < 1 && ' Personelin 1 yılı dolmadığı için bu gün sayısı, yıllık izne hak kazandığında ilk yıl hakkından mahsup edilir.'}
+                                            </div>
+                                        )}
+                                        {bakiyeAsimi > 0 && (
+                                            <div className="text-sm bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-lg">
+                                                <i className="fas fa-triangle-exclamation mr-1"></i>
+                                                Bakiye aşımı: {seciliPer.ad} için bekleyenler dahil <strong>{bakiyeAsimi} gün</strong> fazla.
+                                                {seciliPer.kidem < 1 && ' Personelin 1 yılı dolmamış — "Avans İzin" türünü kullanmak isteyebilirsiniz.'}
+                                            </div>
+                                        )}
+                                        {cakisanlar.length > 0 && (
+                                            <div className="text-sm bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-lg">
+                                                <i className="fas fa-users mr-1"></i>
+                                                Aynı departmanda bu tarihlerde izinli: <strong>{cakisanlar.join(', ')}</strong>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    {talepler.map(talep => {
-                                        const per = personelDurumlari.find(p => p.id === parseInt(talep.personel_id));
-                                        if(!per) return null;
+                                <div className="flex gap-2 mb-4">
+                                    {[['hepsi', 'Hepsi'], ['bekliyor', 'Bekleyen'], ['onaylandi', 'Onaylı'], ['reddedildi', 'Reddedilen']].map(([k, l]) => (
+                                        <button key={k} onClick={() => setDurumFiltre(k)}
+                                            className={`px-3 py-1.5 rounded-lg text-sm ${durumFiltre === k ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>{l}</button>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-3">
+                                    {filtreliTalepler.map(talep => {
+                                        const per = perFor(talep.personel_id);
+                                        if (!per) return null;
                                         const sure = isGunuHesapla(talep.baslangic, talep.bitis);
+                                        const tb = turBilgi(talep.tur || 'Yıllık İzin');
                                         return (
-                                            <div key={talep.id} className="bg-white rounded-xl shadow-sm border p-5 flex items-center justify-between border-slate-100">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-3 mb-1">
-                                                        <span className="font-bold text-lg text-slate-800">{per.ad}</span>
-                                                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">{per.departman}</span>
-                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${talep.durum === 'onaylandi' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                                            {talep.durum}
-                                                        </span>
+                                            <div key={talep.id} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex items-center justify-between gap-4 flex-wrap">
+                                                <div className="flex-1 min-w-[240px]">
+                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                        <span className="font-bold text-slate-800">{per.ad}</span>
+                                                        <Rozet ton="slate">{per.departman || '—'}</Rozet>
+                                                        <Rozet ton={tb.renk}>{talep.tur || 'Yıllık İzin'}</Rozet>
+                                                        <Rozet ton={DURUM_TON[talep.durum]}>{DURUM_ETIKET[talep.durum] || talep.durum}</Rozet>
+                                                        {!tb.duser && <span className="text-xs text-slate-400">bakiyeden düşmez</span>}
                                                     </div>
-                                                    <div className="text-sm text-slate-600 flex items-center gap-4">
-                                                        <span><i className="far fa-calendar-alt mr-1"></i> {talep.baslangic} <i className="fas fa-arrow-right text-xs mx-1"></i> {talep.bitis}</span>
-                                                        <span className="font-medium text-slate-800"><i className="fas fa-clock mr-1 text-slate-400"></i> {sure} İş Günü</span>
+                                                    <div className="text-sm text-slate-600 flex items-center gap-4 flex-wrap">
+                                                        <span><i className="far fa-calendar-alt mr-1"></i>{trTarih(talep.baslangic)} <i className="fas fa-arrow-right text-xs mx-1"></i> {trTarih(talep.bitis)}</span>
+                                                        <span className="font-medium text-slate-800">{sure} iş günü</span>
+                                                        {talep.aciklama && <span className="text-slate-400">{talep.aciklama}</span>}
                                                     </div>
                                                 </div>
-                                                {talep.durum !== 'reddedildi' && (
-                                                    <button onClick={() => talepGuncelle(talep.id, 'reddedildi')} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg border border-red-200">
-                                                        İptal Et
-                                                    </button>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {talep.durum === 'bekliyor' && (
+                                                        <React.Fragment>
+                                                            <button onClick={() => talepGuncelle(talep.id, 'onaylandi')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700">Onayla</button>
+                                                            <button onClick={() => talepGuncelle(talep.id, 'reddedildi')} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm border border-red-200 hover:bg-red-100">Reddet</button>
+                                                        </React.Fragment>
+                                                    )}
+                                                    {talep.durum !== 'bekliyor' && (
+                                                        <button onClick={() => talepGuncelle(talep.id, 'bekliyor')} className="text-slate-500 px-3 py-2 rounded-lg text-sm border border-slate-200 hover:bg-slate-50">Beklemeye al</button>
+                                                    )}
+                                                    <button onClick={() => talepSil(talep.id)} className="text-slate-400 hover:text-red-600 px-2"><i className="fas fa-trash"></i></button>
+                                                </div>
                                             </div>
                                         );
                                     })}
+                                    {filtreliTalepler.length === 0 && (
+                                        <div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400">Bu filtrede kayıt yok.</div>
+                                    )}
                                 </div>
                             </div>
                         )}
